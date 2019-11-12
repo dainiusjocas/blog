@@ -1,4 +1,3 @@
-
 ---
 aliases: [gitlab-ci-clojure-dependencies]
 projects: [clojure]

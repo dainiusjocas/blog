@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>gitlab | Dainius Jocas</title><link>https://www.jocas.lt/categories/gitlab/</link><atom:link href="https://www.jocas.lt/categories/gitlab/index.xml" rel="self" type="application/rss+xml"/><description>gitlab</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Mon, 11 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/img/icon-192.png</url><title>gitlab</title><link>https://www.jocas.lt/categories/gitlab/</link></image><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/post/gitlab-ci-clojure-dependencies/</guid><description>
+&lt;p&gt;I want to share my hard-won lessons on how to setup the Gitlab CI for Clojure projects based on tools.deps. I think that the Gitlab CI is a wonderful tool for CI workloads. But when you&amp;rsquo;re going a bit sideways from the documented ways of doing things you have to do a bit of discovery for yourself.&lt;/p&gt;
+&lt;h2 id=&#34;gitlab-ci-cache-setup&#34;&gt;Gitlab CI Cache Setup&lt;/h2&gt;
+&lt;p&gt;Usually I want to cache dependencies between all build and all branches. To achieve this I hard-code the cache key at the root of the &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; file e.g.:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-yaml&#34;&gt;cache:
+key: one-key-to-rule-them-all
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;When it comes to caching Clojure dependencies we have to be aware that there different types of dependencies. Two most common ones are: Maven and gitlibs.&lt;/p&gt;
+&lt;p&gt;The Gitlab CI cache works &lt;strong&gt;only&lt;/strong&gt; with directories &lt;strong&gt;inside the project directory&lt;/strong&gt;. While local repositories (i.e. cache) for Clojure dependencies &lt;strong&gt;by default&lt;/strong&gt; are stored &lt;strong&gt;outside the project directory&lt;/strong&gt; (&lt;code&gt;~/.m2&lt;/code&gt; and &lt;code&gt;~/.gitlibs&lt;/code&gt;). Therefore, we have to provide parameters for our build tool to change the default directories for storing the dependencies.&lt;/p&gt;
+&lt;p&gt;To specify Maven local repository we can provide &lt;code&gt;:mvn/local-repo&lt;/code&gt; parameter e.g.:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-yaml&#34;&gt;clojure -Sdeps &#39;{:mvn/local-repo &amp;quot;./.m2/repository&amp;quot;}&#39; -A:test
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Having configured local maven repository in our &lt;code&gt;gitlab-ci.yml&lt;/code&gt; we can specify:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-yaml&#34;&gt;cache:
+key: one-key-to-rule-them-all
+paths:
+- ./.m2/repository
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;When it comes to gitlibs there is no public API for changing the default directory in &lt;code&gt;tools.deps&lt;/code&gt;. But the underlying &lt;code&gt;tools.gitlibs&lt;/code&gt; uses an environment variable to set where to store the &lt;a href=&#34;https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23&#34; target=&#34;_blank&#34;&gt;gitlibs conveniently named &lt;strong&gt;GITLIBS&lt;/strong&gt;&lt;/a&gt;. E.g.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;$ (export GITLIBS=&amp;quot;.gitlibs/&amp;quot; &amp;amp;&amp;amp; clojure -A:test)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Of course, we should not forget to configure the cache:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-yaml&#34;&gt;cache:
+key: one-key-to-rule-them-all
+paths:
+- ./.gitlibs
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;To use caching for both types of dependencies:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;(export GITLIBS=&amp;quot;.gitlibs/&amp;quot; &amp;amp;&amp;amp; clojure -Sdeps &#39;{:mvn/local-repo &amp;quot;./.m2/repository&amp;quot;}&#39; -A:test)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;And setup the cache:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-yaml&#34;&gt;cache:
+key: one-key-to-rule-them-all
+paths:
+- ./.m2/repository
+- ./.gitlibs
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;If you want to disable cache for a particular job (e.g. you&amp;rsquo;re linting with &lt;a href=&#34;https://github.com/borkdude/clj-kondo&#34; target=&#34;_blank&#34;&gt;clj-kondo&lt;/a&gt;, which is delivered as a &lt;a href=&#34;https://www.graalvm.org/&#34; target=&#34;_blank&#34;&gt;GraalVM&lt;/a&gt; compiled &lt;a href=&#34;https://www.graalvm.org/docs/reference-manual/native-image/&#34; target=&#34;_blank&#34;&gt;native image&lt;/a&gt;), just give an empty map for a job&amp;rsquo;s cache setup, e.g.:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-yaml&#34;&gt;lint:
+stage: test
+image: borkdude/clj-kondo
+cache: {}
+when: always
+script:
+- clj-kondo --lint src test
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I&amp;rsquo;ve used the Gitlab CI cache while working on a streaming-text search library &lt;a href=&#34;https://github.com/tokenmill/beagle&#34; target=&#34;_blank&#34;&gt;Beagle&lt;/a&gt;. A full .gitlab-ci.yml file example of the setup can be found &lt;a href=&#34;https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml&#34; target=&#34;_blank&#34;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Hope this helps!&lt;/p&gt;</description></item></channel></rss>

@@ -1,4 +1,79 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>devops | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/devops/</link><atom:link href="https://www.jocas.lt/blog/tags/devops/index.xml" rel="self" type="application/rss+xml"/><description>devops</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Mon, 11 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>devops</title><link>https://www.jocas.lt/blog/tags/devops/</link></image><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</guid><description>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>devops | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/devops/</link><atom:link href="https://www.jocas.lt/blog/tags/devops/index.xml" rel="self" type="application/rss+xml"/><description>devops</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Fri, 15 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>devops</title><link>https://www.jocas.lt/blog/tags/devops/</link></image><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>
+&lt;p&gt;I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I&amp;rsquo;m going to answer in this blog post is: how to build an uberjar for AWS Lambda with &lt;a href=&#34;https://github.com/tonsky/uberdeps&#34; target=&#34;_blank&#34;&gt;Uberdeps&lt;/a&gt;?&lt;/p&gt;
+&lt;h2 id=&#34;tl-dr&#34;&gt;TL;DR&lt;/h2&gt;
+&lt;p&gt;Add an alias to the &lt;code&gt;deps.edn&lt;/code&gt; for uberjar building:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;{:aliases {:uberjar
+{:extra-deps {uberdeps {:mvn/version &amp;quot;0.1.6&amp;quot;}}
+:main-opts [&amp;quot;-m&amp;quot; &amp;quot;uberdeps.uberjar&amp;quot;]}}}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Create an executable file &lt;code&gt;compile.clj&lt;/code&gt; in the project root folder:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;touch compile.clj
+chmod +x compile.clj
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Put this code in the &lt;code&gt;compile.clj&lt;/code&gt; file:&lt;/p&gt;
+&lt;script src=&#34;https://gist.github.com/dainiusjocas/e9b154d7a1cbdca8558cd7c5d730d5d0.js&#34;&gt;&lt;/script&gt;
+&lt;p&gt;Run:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;(rm -rf classes &amp;amp;&amp;amp; \
+mkdir classes &amp;amp;&amp;amp; \
+./compile.clj &amp;amp;&amp;amp; \
+clojure -A:uberjar --target target/UBERJAR_NAME.jar)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;I&amp;rsquo;d advise put that last script into a &lt;code&gt;Makefile&lt;/code&gt; ;)&lt;/p&gt;
+&lt;hr /&gt;
+&lt;h2 id=&#34;introduction&#34;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;To deploy your Clojure code to AWS Lambda you need to package it as an uberjar. If your project is managed with &lt;code&gt;deps.edn&lt;/code&gt;, basically you&amp;rsquo;re on your own to find a suitable library to package your code.&lt;/p&gt;
+&lt;p&gt;For some time to build uberjars for &lt;code&gt;deps.edn&lt;/code&gt; projects I was using &lt;a href=&#34;https://github.com/luchiniatwork/cambada&#34; target=&#34;_blank&#34;&gt;Cambada&lt;/a&gt;. It did the job but I was not entirely happy with the library for a couple of reasons:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;the library seems to be no longer maintained;&lt;/li&gt;
+&lt;li&gt;it has various &lt;a href=&#34;https://github.com/luchiniatwork/cambada/issues&#34; target=&#34;_blank&#34;&gt;bugs&lt;/a&gt; with transitive Git dependencies. I&amp;rsquo;ve found out that these bugs are fixed in a &lt;a href=&#34;https://github.com/xfthhxk/cambada&#34; target=&#34;_blank&#34;&gt;fork&lt;/a&gt; of the Cambada and I used it as a git dependency.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Because building an uberjar for &lt;code&gt;deps.edn&lt;/code&gt; boils down to just finding a library there is always temptation to try something new.&lt;/p&gt;
+&lt;h2 id=&#34;enter-uberdeps&#34;&gt;Enter Uberdeps&lt;/h2&gt;
+&lt;p&gt;For my toy project I wanted to try out &lt;a href=&#34;https://github.com/tonsky/uberdeps&#34; target=&#34;_blank&#34;&gt;Uberdeps&lt;/a&gt;. The introduction &lt;a href=&#34;https://tonsky.me/blog/uberdeps/&#34; target=&#34;_blank&#34;&gt;blog post&lt;/a&gt; got me interested and I really liked the main idea:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Takes deps.edn and packs an uberjar out of it.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Sounds like exactly what I need.&lt;/p&gt;
+&lt;h2 id=&#34;trouble&#34;&gt;Trouble&lt;/h2&gt;
+&lt;p&gt;I&amp;rsquo;ve written my application, added all the things needed to deploy it as an AWS Lambda, build an uberjar with Uberdeps, deployed the app with the AWS CloudFormation, but when I&amp;rsquo;ve invoked the Lambda I&amp;rsquo;ve received an error:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;{
+&amp;quot;message&amp;quot; : &amp;quot;Internal server error&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;After searching through the AWS CloudWatch logs I&amp;rsquo;ve found:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;Class not found: my.Lambda: java.lang.ClassNotFoundException
+java.lang.ClassNotFoundException: my.Lambda
+at java.net.URLClassLoader.findClass(URLClassLoader.java:382)
+at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
+at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
+at java.lang.Class.forName0(Native Method)
+at java.lang.Class.forName(Class.java:348)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;The &lt;code&gt;my.Lambda&lt;/code&gt; class was not found.&lt;/p&gt;
+&lt;p&gt;After taking a look at the contents of the uberjar I&amp;rsquo;ve noticed that the &lt;code&gt;my.Lambda&lt;/code&gt; class is indeed not inside the Uberjar. Ah, it seems that AOT (Ahead-of-Time) is not done out of the box. After searching and not finding a flag or some parameter that I need to pass to force the AOT compilation in the Uberdeps README, I&amp;rsquo;ve discovered an already closed &lt;a href=&#34;https://github.com/tonsky/uberdeps/pull/11&#34; target=&#34;_blank&#34;&gt;pull request&lt;/a&gt;: the AOT compilation functionality is not implemented.&lt;/p&gt;
+&lt;p&gt;I was in trouble.&lt;/p&gt;
+&lt;h2 id=&#34;solution&#34;&gt;Solution&lt;/h2&gt;
+&lt;p&gt;The solution was to manually perform AOT compilation of the relevant namespaces right before building an uberjar and then instruct Uberdeps to put the resulting class files into the uberjar.&lt;/p&gt;
+&lt;p&gt;To do AOT compilation I&amp;rsquo;ve written a Clojure script &lt;code&gt;compile.clj&lt;/code&gt;:
+&lt;script src=&#34;https://gist.github.com/dainiusjocas/e9b154d7a1cbdca8558cd7c5d730d5d0.js&#34;&gt;&lt;/script&gt;&lt;/p&gt;
+&lt;p&gt;Inspiration on how to write the script was taken from &lt;a href=&#34;https://www.reddit.com/r/Clojure/comments/8ltsrs/standalone_script_with_clj_including_dependencies/&#34; target=&#34;_blank&#34;&gt;here&lt;/a&gt; and &lt;a href=&#34;https://github.com/tonsky/datascript/blob/master/release.clj&#34; target=&#34;_blank&#34;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;To instruct Uberdeps to put class files to the uberjar I&amp;rsquo;ve added &lt;code&gt;classes&lt;/code&gt; directory to the &lt;code&gt;:paths&lt;/code&gt; vector in &lt;code&gt;deps.edn&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Just for the convenience, in the Makefile I&amp;rsquo;ve put commands for AOT compilation right before the command to build an uberjar:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;uberjar:
+rm -rf classes
+mkdir classes
+./compile.clj
+clojure -A:uberjar --target target/my-jar-name.jar
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;And that is it! I have an uberjar with &lt;code&gt;my.Lambda&lt;/code&gt; class and the AWS Lambda runtime is happy.&lt;/p&gt;
+&lt;h2 id=&#34;discussion&#34;&gt;Discussion&lt;/h2&gt;
+&lt;p&gt;The solution is not bullet proof because:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;it assumes that the main &lt;code&gt;deps.end&lt;/code&gt; file is called &lt;code&gt;deps.edn&lt;/code&gt;;&lt;/li&gt;
+&lt;li&gt;compiled classes are put in the &lt;code&gt;classes&lt;/code&gt; directory;&lt;/li&gt;
+&lt;li&gt;the alias for which namespaces should be AOT compiled is the default alias.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;I hope that when a more generic solution will be needed either the Uberdeps will have an option for AOT compilatoin or I&amp;rsquo;ll be clever enough to deal with the situation and write a follow up blog post with the workaround.&lt;/p&gt;</description></item><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</guid><description>
 &lt;p&gt;I want to share my hard-won lessons on how to setup the Gitlab CI for Clojure projects based on tools.deps. I think that the Gitlab CI is a wonderful tool for CI workloads. But when you&amp;rsquo;re going a bit sideways from the documented ways of doing things you have to do a bit of discovery for yourself.&lt;/p&gt;
 &lt;h2 id=&#34;gitlab-ci-cache-setup&#34;&gt;Gitlab CI Cache Setup&lt;/h2&gt;
 &lt;p&gt;Usually I want to cache dependencies between all build and all branches. To achieve this I hard-code the cache key at the root of the &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; file e.g.:&lt;/p&gt;

@@ -3,7 +3,7 @@ aliases: [uberdeps-for-aws-lambda]
 projects: [clojure]
 title: Using Uberdeps to Build AWS Lambda Uberjar
 authors: [Dainius Jocas]
-date: '2019-11-12'
+date: '2019-11-15'
 tags: [clojure, devops, aws, lambda]
 categories:
   - clojure
@@ -68,7 +68,11 @@ Because building an uberjar for `deps.edn` boils down to just finding a library 
 
 ## Enter Uberdeps
 
-For my toy project I wanted to try out [Uberdeps](https://github.com/tonsky/uberdeps). The introduction [blog post](https://tonsky.me/blog/uberdeps/) got me interested and I really liked the main idea: "Takes deps.edn and packs an uberjar out of it." Sounds like exactly what I need.
+For my toy project I wanted to try out [Uberdeps](https://github.com/tonsky/uberdeps). The introduction [blog post](https://tonsky.me/blog/uberdeps/) got me interested and I really liked the main idea:
+
+> Takes deps.edn and packs an uberjar out of it.
+
+Sounds like exactly what I need.
 
 ## Trouble
 

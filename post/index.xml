@@ -1,4 +1,181 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts | Dainius Jocas</title><link>https://www.jocas.lt/blog/post/</link><atom:link href="https://www.jocas.lt/blog/post/index.xml" rel="self" type="application/rss+xml"/><description>Posts</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Fri, 15 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>Posts</title><link>https://www.jocas.lt/blog/post/</link></image><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts | Dainius Jocas</title><link>https://www.jocas.lt/blog/post/</link><atom:link href="https://www.jocas.lt/blog/post/index.xml" rel="self" type="application/rss+xml"/><description>Posts</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Wed, 18 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>Posts</title><link>https://www.jocas.lt/blog/post/</link></image><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>
+&lt;p&gt;If you google &lt;code&gt;How can you match a long query text to a short text field?&lt;/code&gt; it will point you to the &lt;a href=&#34;https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field&#34; target=&#34;_blank&#34;&gt;Stack Overflow page&lt;/a&gt; &lt;a href=&#34;https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3&#34; target=&#34;_blank&#34;&gt;or here&lt;/a&gt; where the answer is to use [Elasticsearch Percolator]().&lt;/p&gt;
+&lt;p&gt;My search items are phrases meaning that it should match all terms in order. Let&amp;rsquo;s create a sample setup in Kibana (v7.5) Dev dashboard.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Create an index for percolation:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;PUT /my-index
+{
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;message&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;
+},
+&amp;quot;query&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;percolator&amp;quot;
+}
+}
+}
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Note on &lt;code&gt;&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code&gt;: this allows &lt;a href=&#34;https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter&#34; target=&#34;_blank&#34;&gt;Fast Vector Highlighter&lt;/a&gt; to highlight combined phrase not just separate qeury terms.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Store one phrase query:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;PUT /my-index/_doc/1?refresh
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;match_phrase&amp;quot;: {
+&amp;quot;message&amp;quot;: &amp;quot;bonsai tree&amp;quot;
+}
+}
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Percolate a document:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;GET /my-index/_search?
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;percolate&amp;quot;: {
+&amp;quot;field&amp;quot;: &amp;quot;query&amp;quot;,
+&amp;quot;document&amp;quot;: {
+&amp;quot;message&amp;quot;: &amp;quot;A new bonsai tree in the office&amp;quot;
+}
+}
+},
+&amp;quot;highlight&amp;quot;: {
+&amp;quot;fields&amp;quot;: {
+&amp;quot;message&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;fvh&amp;quot;
+}
+}
+}
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Note on &lt;code&gt;&amp;quot;type&amp;quot;: &amp;quot;fvh&amp;quot;&lt;/code&gt;: this instructs Elasticsearch to use the Fast Vector Highlighter.&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The query yields:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;{
+&amp;quot;took&amp;quot; : 23,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 0.26152915,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;my-index&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 0.26152915,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;query&amp;quot; : {
+&amp;quot;match_phrase&amp;quot; : {
+&amp;quot;message&amp;quot; : &amp;quot;bonsai tree&amp;quot;
+}
+}
+},
+&amp;quot;fields&amp;quot; : {
+&amp;quot;_percolator_document_slot&amp;quot; : [
+0
+]
+},
+&amp;quot;highlight&amp;quot; : {
+&amp;quot;message&amp;quot; : [
+&amp;quot;A new &amp;lt;em&amp;gt;bonsai tree&amp;lt;/em&amp;gt; in the office&amp;quot;
+]
+}
+}
+]
+}
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;As we see highlighter correctly marker the search phrase.&lt;/p&gt;
+&lt;h2 id=&#34;storing-additional-data-with-percolator-queries&#34;&gt;Storing additional data with percolator queries&lt;/h2&gt;
+&lt;p&gt;Percolation result can be used to connect pieces of information in your system, e.g. store a &lt;code&gt;subscriber_email&lt;/code&gt; attribute of the user that wants to be notified when the query matches along with the percolator query.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;PUT /my-index/_doc/1?refresh
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;match_phrase&amp;quot;: {
+&amp;quot;message&amp;quot;: &amp;quot;bonsai tree&amp;quot;
+}
+},
+&amp;quot;subscriber_email&amp;quot;: &amp;quot;subscriber_email@example.com&amp;quot;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Then query:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;GET /my-index/_search?
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;percolate&amp;quot;: {
+&amp;quot;field&amp;quot;: &amp;quot;query&amp;quot;,
+&amp;quot;document&amp;quot;: {
+&amp;quot;message&amp;quot;: &amp;quot;A new bonsai tree in the office&amp;quot;
+}
+}
+},
+&amp;quot;highlight&amp;quot;: {
+&amp;quot;fields&amp;quot;: {
+&amp;quot;message&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;fvh&amp;quot;
+}
+}
+}
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;This query yields:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;{
+&amp;quot;took&amp;quot; : 10,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 0.26152915,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;my-index&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 0.26152915,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;query&amp;quot; : {
+&amp;quot;match_phrase&amp;quot; : {
+&amp;quot;message&amp;quot; : &amp;quot;bonsai tree&amp;quot;
+}
+},
+&amp;quot;subscriber_email&amp;quot; : &amp;quot;subscriber_email@example.com&amp;quot;
+},
+&amp;quot;fields&amp;quot; : {
+&amp;quot;_percolator_document_slot&amp;quot; : [
+0
+]
+},
+&amp;quot;highlight&amp;quot; : {
+&amp;quot;message&amp;quot; : [
+&amp;quot;A new &amp;lt;em&amp;gt;bonsai tree&amp;lt;/em&amp;gt; in the office&amp;quot;
+]
+}
+}
+]
+}
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Now, take the email under the &lt;code&gt;&amp;quot;subscriber_email&amp;quot;&lt;/code&gt; from the response and send an email with the highlight.&lt;/p&gt;</description></item><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>
 &lt;p&gt;I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I&amp;rsquo;m going to answer in this blog post is: how to build an uberjar for AWS Lambda with &lt;a href=&#34;https://github.com/tonsky/uberdeps&#34; target=&#34;_blank&#34;&gt;Uberdeps&lt;/a&gt;?&lt;/p&gt;
 &lt;h2 id=&#34;tl-dr&#34;&gt;TL;DR&lt;/h2&gt;
 &lt;p&gt;Add an alias to the &lt;code&gt;deps.edn&lt;/code&gt; for uberjar building:&lt;/p&gt;

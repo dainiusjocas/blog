@@ -1,4 +1,399 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts | Dainius Jocas</title><link>https://www.jocas.lt/blog/post/</link><atom:link href="https://www.jocas.lt/blog/post/index.xml" rel="self" type="application/rss+xml"/><description>Posts</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Wed, 18 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>Posts</title><link>https://www.jocas.lt/blog/post/</link></image><item><title>Elasticsearch Percolator and Text Analyzers</title><link>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</guid><description>&lt;p>This time I need to percolate texts with different analyzers for index and search analyzers.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts | Dainius Jocas</title><link>https://www.jocas.lt/blog/post/</link><atom:link href="https://www.jocas.lt/blog/post/index.xml" rel="self" type="application/rss+xml"/><description>Posts</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sun, 22 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>Posts</title><link>https://www.jocas.lt/blog/post/</link></image><item><title>Phrase Search with Synonym Graph Token Filter in Elasticsearch</title><link>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</link><pubDate>Sun, 22 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</guid><description>&lt;p>I've &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">written&lt;/a> that if you google for &lt;code>How can you match a long query text to a short text field?&lt;/code> you're advised to use Elasticsearch Percolator. Today I'll show an alternative way of solving the same problem with Elasticsearch.&lt;/p>
+&lt;p>The main idea is to use &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/analysis-synonym-graph-tokenfilter.html">Synonym Graph Token Filter&lt;/a> with some data preparation.&lt;/p>
+&lt;h2 id="problem-statement">Problem Statement&lt;/h2>
+&lt;p>Say that we learned how extract some entity from free form text with techniques such as NER, dictionary annotations, or some fancy Machine Learning. And when this entity is mentioned in the search query we want to boost documents that mention this entity. Also, say you've ruled out using Elasticsearch Percolator because it increases network latency because it requires additional call to Elasticsearch.&lt;/p>
+&lt;p>For further discussion our unstructured text is going to be &lt;code>This description is about a Very Important Thing and something else.&lt;/code> and the extracted entity &lt;code>Very Important Thing&lt;/code>. Our test document looks like :&lt;/p>
+&lt;div class="highlight">&lt;pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-json" data-lang="json">{
+&lt;span style="color:#f92672">&amp;#34;description&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;This description is about a Very Important Thing and something else.&amp;#34;&lt;/span>,
+&lt;span style="color:#f92672">&amp;#34;entity&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Very Important Thing&amp;#34;&lt;/span>
+}
+&lt;/code>&lt;/pre>&lt;/div>&lt;p>Search queries:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>prefix very important thing suffix&lt;/code>&lt;/li>
+&lt;li>&lt;code>prefix very important another thing suffix&lt;/code>&lt;/li>
+&lt;li>&lt;code>prefix thing suffix&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;p>All examples are tested on Elasticsearch 7.5.1.&lt;/p>
+&lt;h3 id="naive-setup">Naive Setup&lt;/h3>
+&lt;p>Let's create an index for our documents:&lt;/p>
+&lt;pre>&lt;code>PUT /test_index-2
+{
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;description&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;
+},
+&amp;quot;entity&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Entity field is of type &lt;code>text&lt;/code> because we want it to be searchable. &lt;code>keyword&lt;/code> type won't work because it does only exact matches and out query most likely will be longer than our entity string.&lt;/p>
+&lt;p>Index our document:&lt;/p>
+&lt;pre>&lt;code>PUT test_index-2/_doc/1
+{
+&amp;quot;description&amp;quot;: &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot;: &amp;quot;Very Important Thing&amp;quot;
+}
+&lt;/code>&lt;/pre>&lt;p>Search the index with the query that mentions our &lt;code>very important thing&lt;/code>:&lt;/p>
+&lt;pre>&lt;code>GET test_index-2/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;prefix very important thing suffix&amp;quot;,
+&amp;quot;boost&amp;quot;: 2
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 1.7260926,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;test_index-2&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 1.7260926,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;description&amp;quot; : &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot; : &amp;quot;Very Important Thing&amp;quot;
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Cool, we found what we we looking for.&lt;/p>
+&lt;p>Let's try another query, this time with a mention of &lt;code>very important another thing&lt;/code>:&lt;/p>
+&lt;pre>&lt;code>GET test_index-2/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;prefix very important another thing suffix&amp;quot;,
+&amp;quot;boost&amp;quot;: 2
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 1.7260926,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;test_index-2&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 1.7260926,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;description&amp;quot; : &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot; : &amp;quot;Very Important Thing&amp;quot;
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Oh, the results are the same as with the previous query despite the fact that we mention &lt;code>Another Thing&lt;/code> here. But it still might be OK because we matched all the terms of the entity.&lt;/p>
+&lt;p>Let's try another query:&lt;/p>
+&lt;pre>&lt;code>GET test_index-2/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;prefix thing suffix&amp;quot;,
+&amp;quot;boost&amp;quot;: 2
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 0.5753642,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;test_index-2&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 0.5753642,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;description&amp;quot; : &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot; : &amp;quot;Very Important Thing&amp;quot;
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Oh no, we still matched our &lt;code>Very Important Thing&lt;/code> while only &lt;code>thing&lt;/code> term is present in the query. But at least this time the score is lower than with previous twoqueries, 0.5753642 vs. 1.7260926. Here we clearly see the problem: we are matching short strings with long strings and partial matches raises problems.&lt;/p>
+&lt;h2 id="proposed-solution">Proposed Solution&lt;/h2>
+&lt;p>Let's leverage Synonym Graph Token Filter to solve our problem.&lt;/p>
+&lt;pre>&lt;code>PUT /test_index-1
+{
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;descrition&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;
+},
+&amp;quot;entity&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;lowercase_keyword_analyzer&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;synonym_graph_analyzer&amp;quot;
+}
+}
+},
+&amp;quot;settings&amp;quot;: {
+&amp;quot;index&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;synonym_graph_analyzer&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;,
+&amp;quot;my_synonym_graph&amp;quot;
+]
+},
+&amp;quot;lowercase_keyword_analyzer&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;
+],
+&amp;quot;char_filter&amp;quot;: [
+&amp;quot;spaces_to_undescores_filter&amp;quot;
+]
+}
+},
+&amp;quot;char_filter&amp;quot;: {
+&amp;quot;spaces_to_undescores_filter&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;mapping&amp;quot;,
+&amp;quot;mappings&amp;quot;: [
+&amp;quot; \\u0020 =&amp;gt; _&amp;quot;
+]
+}
+},
+&amp;quot;filter&amp;quot;: {
+&amp;quot;my_synonym_graph&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;synonym_graph&amp;quot;,
+&amp;quot;lenient&amp;quot;: true,
+&amp;quot;synonyms&amp;quot;: [
+&amp;quot;very important thing =&amp;gt; very_important_thing&amp;quot;
+]
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Let's decompose this large index configuration piece by piece:&lt;/p>
+&lt;ol>
+&lt;li>The &lt;code>entity&lt;/code> attribute now has separate analyzers for both index and search phases.&lt;/li>
+&lt;li>The &lt;code>lowercase_keyword_analyzer&lt;/code> uses keyword tokenizer which means that tokenization will result in the sequence of token of size 1, then it normalizes tokens by lowercasing them and finally &lt;code>spaces_to_undescores_filter&lt;/code>, replaces spaces to underscores. E.g. a string &lt;code>&amp;quot;Very Important Thing&amp;quot;&lt;/code> is transformed into list of tokens &lt;code>[&amp;quot;very_important_thing&amp;quot;]&lt;/code>. Or use out friend &lt;code>_analyze&lt;/code> API:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code>POST test_index-1/_analyze
+{
+&amp;quot;text&amp;quot;: [&amp;quot;Very Important Thing&amp;quot;],
+&amp;quot;analyzer&amp;quot;: &amp;quot;lowercase_keyword_analyzer&amp;quot;
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;tokens&amp;quot; : [
+{
+&amp;quot;token&amp;quot; : &amp;quot;very_important_thing&amp;quot;,
+&amp;quot;start_offset&amp;quot; : 0,
+&amp;quot;end_offset&amp;quot; : 20,
+&amp;quot;type&amp;quot; : &amp;quot;word&amp;quot;,
+&amp;quot;position&amp;quot; : 0
+}
+]
+}
+&lt;/code>&lt;/pre>&lt;ol start="3">
+&lt;li>The &lt;code>synonym_graph_analyzer&lt;/code> use standard tokenizer, which is followed by the &lt;code>lowercase&lt;/code> filter, and then the &lt;code>my_synonym_graph&lt;/code> token filter is applied. We've set up one synonym &lt;code>&amp;quot;very important thing =&amp;gt; very_important_thing&amp;quot;&lt;/code>. E.g.&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code>POST test_index-1/_analyze
+{
+&amp;quot;text&amp;quot;: [&amp;quot;prefix very important thing suffix&amp;quot;],
+&amp;quot;analyzer&amp;quot;: &amp;quot;synonym_graph_analyzer&amp;quot;
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;tokens&amp;quot; : [
+{
+&amp;quot;token&amp;quot; : &amp;quot;prefix&amp;quot;,
+&amp;quot;start_offset&amp;quot; : 0,
+&amp;quot;end_offset&amp;quot; : 6,
+&amp;quot;type&amp;quot; : &amp;quot;&amp;lt;ALPHANUM&amp;gt;&amp;quot;,
+&amp;quot;position&amp;quot; : 0
+},
+{
+&amp;quot;token&amp;quot; : &amp;quot;very_important_thing&amp;quot;,
+&amp;quot;start_offset&amp;quot; : 7,
+&amp;quot;end_offset&amp;quot; : 27,
+&amp;quot;type&amp;quot; : &amp;quot;SYNONYM&amp;quot;,
+&amp;quot;position&amp;quot; : 1
+},
+{
+&amp;quot;token&amp;quot; : &amp;quot;suffix&amp;quot;,
+&amp;quot;start_offset&amp;quot; : 28,
+&amp;quot;end_offset&amp;quot; : 34,
+&amp;quot;type&amp;quot; : &amp;quot;&amp;lt;ALPHANUM&amp;gt;&amp;quot;,
+&amp;quot;position&amp;quot; : 2
+}
+]
+}
+&lt;/code>&lt;/pre>&lt;p>After analysis we have 3 tokens &lt;code>[&amp;quot;prefix&amp;quot;, &amp;quot;very_important_thing&amp;quot;, &amp;quot;suffix&amp;quot;]&lt;/code>. Notice &lt;code>&amp;quot;very_important_thing&amp;quot;&lt;/code> token: this is equal to the right-hand-side from our synonym definitions. Now let's run queries from the previous section:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;prefix very important thing suffix&amp;quot;,
+&amp;quot;boost&amp;quot;: 2
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 0.5753642,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;test_index-1&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 0.5753642,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;description&amp;quot; : &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot; : &amp;quot;Very Important Thing&amp;quot;
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>As expected: exact match -&amp;gt; hit.&lt;/p>
+&lt;p>Another query:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;prefix very important another thing suffix&amp;quot;,
+&amp;quot;boost&amp;quot;: 2
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 0,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 0,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : null,
+&amp;quot;hits&amp;quot; : [ ]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>No hits! Good! The document is not going to be boosted despite the fact that all tokens match.&lt;/p>
+&lt;p>And the last one:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;prefix thing suffix&amp;quot;,
+&amp;quot;boost&amp;quot;: 2
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 0,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : null,
+&amp;quot;hits&amp;quot; : [ ]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>No hits! Good. This means that also substring doesn't match.&lt;/p>
+&lt;h2 id="discussion">Discussion&lt;/h2>
+&lt;p>Synonym Graph Token Filter can &amp;ldquo;replace&amp;rdquo; a sequence of tokens (e.g. a phrase) with another sequence of tokens. In this particular example: many tokens were replaced with one token.&lt;/p>
+&lt;ol>
+&lt;li>One field can have only one analyzer pair for index and search phases. If we want another analysis pipeline for the &lt;code>entity&lt;/code> attribute we have to create another field with the analyzers specified, e.g. stemmed phrase with lower boost.&lt;/li>
+&lt;li>The synonym list must be prepared before the index creation.&lt;/li>
+&lt;li>Management of the synonym list might complicate index management, e.g. you use templates for your index management.&lt;/li>
+&lt;li>The overal solution in general might look a bit too complicated.&lt;/li>
+&lt;/ol></description></item><item><title>Elasticsearch Percolator and Text Analyzers</title><link>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</guid><description>&lt;p>This time I need to percolate texts with different analyzers for index and search analyzers.&lt;/p>
 &lt;p>Let's elaborate a bit on &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">previous article&lt;/a> and explicitly declare analyzers to use.&lt;/p>
 &lt;p>Define index:&lt;/p>
 &lt;pre>&lt;code>PUT /my-index

@@ -1,4 +1,319 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/tags/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Sun, 22 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>elasticsearch</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link></image><item><title>Phrase Search with Synonym Graph Token Filter in Elasticsearch</title><link>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</link><pubDate>Sun, 22 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</guid><description>&lt;p>I've &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">written&lt;/a> that if you google for &lt;code>How can you match a long query text to a short text field?&lt;/code> you're advised to use Elasticsearch Percolator. Today I'll show an alternative way of solving the same problem with Elasticsearch.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/tags/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Mon, 23 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>elasticsearch</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link></image><item><title>Using Search Templates in Elasticsearch</title><link>https://www.jocas.lt/blog/post/on-search-templates/</link><pubDate>Mon, 23 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/on-search-templates/</guid><description>&lt;p>I want to take a look at &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html">Search Templates&lt;/a> for Elasticsearch. Let's apply them to examples from &lt;a href="https://www.jocas.lt/blog/post/synonym-graph-phrase-search/">previous post on Synonym Graphs&lt;/a>.&lt;/p>
+&lt;h2 id="setup">Setup&lt;/h2>
+&lt;p>I'm using Elasticsearch 7.5.1.&lt;/p>
+&lt;p>Index configuration:&lt;/p>
+&lt;pre>&lt;code>DELETE test_index-1
+PUT /test_index-1
+{
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;descrition&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;
+},
+&amp;quot;entity&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;lowercase_keyword_analyzer&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;synonym_graph_analyzer&amp;quot;
+}
+}
+},
+&amp;quot;settings&amp;quot;: {
+&amp;quot;index&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;synonym_graph_analyzer&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;,
+&amp;quot;my_synonym_graph&amp;quot;
+]
+},
+&amp;quot;lowercase_keyword_analyzer&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;
+],
+&amp;quot;char_filter&amp;quot;: [
+&amp;quot;spaces_to_undescores_filter&amp;quot;
+]
+}
+},
+&amp;quot;char_filter&amp;quot;: {
+&amp;quot;spaces_to_undescores_filter&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;mapping&amp;quot;,
+&amp;quot;mappings&amp;quot;: [
+&amp;quot; \\u0020 =&amp;gt; _&amp;quot;
+]
+}
+},
+&amp;quot;filter&amp;quot;: {
+&amp;quot;my_synonym_graph&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;synonym_graph&amp;quot;,
+&amp;quot;lenient&amp;quot;: true,
+&amp;quot;synonyms&amp;quot;: [
+&amp;quot;very important thing =&amp;gt; very_important_thing&amp;quot;
+]
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Index the document:&lt;/p>
+&lt;pre>&lt;code>PUT test_index-1/_doc/1
+{
+&amp;quot;description&amp;quot;: &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot;: &amp;quot;Very Important Thing&amp;quot;
+}
+&lt;/code>&lt;/pre>&lt;p>Search queries:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>prefix very important thing suffix&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;h2 id="templates">Templates&lt;/h2>
+&lt;p>I'm very interested in one particular use of the search templates: how flexible is the management of stored seach templates? Can I update a search template while receiving queries?&lt;/p>
+&lt;p>Add a template:&lt;/p>
+&lt;pre>&lt;code>POST _scripts/synonym-graph-search
+{
+&amp;quot;script&amp;quot;: {
+&amp;quot;lang&amp;quot;: &amp;quot;mustache&amp;quot;,
+&amp;quot;source&amp;quot;: {
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;{{query_string}}&amp;quot;,
+&amp;quot;boost&amp;quot;: 2
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Try to run the search:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search/template
+{
+&amp;quot;id&amp;quot;: &amp;quot;synonym-graph-search&amp;quot;,
+&amp;quot;params&amp;quot;: {
+&amp;quot;query_string&amp;quot;: &amp;quot;suffix very important thing prefix&amp;quot;
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 0.5753642,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;test_index-1&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 0.5753642,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;description&amp;quot; : &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot; : &amp;quot;Very Important Thing&amp;quot;
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Exactly as expected.&lt;/p>
+&lt;p>When using a stored search template the Elasticsearch client doesn't need to handle the complex query construction.&lt;/p>
+&lt;h2 id="templates-are-updateable">Templates are updateable&lt;/h2>
+&lt;p>Let's try to update the template with a higher boost value:&lt;/p>
+&lt;pre>&lt;code>POST _scripts/synonym-graph-search
+{
+&amp;quot;script&amp;quot;: {
+&amp;quot;lang&amp;quot;: &amp;quot;mustache&amp;quot;,
+&amp;quot;source&amp;quot;: {
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;{{query_string}}&amp;quot;,
+&amp;quot;boost&amp;quot;: 5
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Works.&lt;/p>
+&lt;p>Now let's run the same query:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search/template
+{
+&amp;quot;id&amp;quot;: &amp;quot;synonym-graph-search&amp;quot;,
+&amp;quot;params&amp;quot;: {
+&amp;quot;query_string&amp;quot;: &amp;quot;suffix very important thing prefix&amp;quot;
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 4,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 1.4384103,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;test_index-1&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 1.4384103,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;description&amp;quot; : &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot; : &amp;quot;Very Important Thing&amp;quot;
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>The scores are 0.5753642 and 1.4384103 that is ~2/5. Cool! This means that without changing (and redeploying) the Elasticsearch client we can change the querying logic, making the query an more dynamic.&lt;/p>
+&lt;h2 id="corner-cases">Corner Cases&lt;/h2>
+&lt;p>What if we run query has more attributes, e.g.:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search/template
+{
+&amp;quot;id&amp;quot;: &amp;quot;synonym-graph-search&amp;quot;,
+&amp;quot;params&amp;quot;: {
+&amp;quot;query_string&amp;quot;: &amp;quot;suffix very important thing prefix&amp;quot;,
+&amp;quot;new_attr&amp;quot;: &amp;quot;123&amp;quot;
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Works as expected!&lt;/p>
+&lt;p>When &lt;code>query_string&lt;/code> is &lt;code>null&lt;/code>:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search/template
+{
+&amp;quot;id&amp;quot;: &amp;quot;synonym-graph-search&amp;quot;,
+&amp;quot;params&amp;quot;: {
+&amp;quot;query_string&amp;quot;: null
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Works!&lt;/p>
+&lt;p>What if the param is not provided:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search/template
+{
+&amp;quot;id&amp;quot;: &amp;quot;synonym-graph-search&amp;quot;,
+&amp;quot;params&amp;quot;: {
+&amp;quot;new_attr&amp;quot;: &amp;quot;value&amp;quot;
+}
+}
+&lt;/code>&lt;/pre>&lt;p>No error!&lt;/p>
+&lt;p>What if we provide a list instead of a string:&lt;/p>
+&lt;pre>&lt;code>GET test_index-1/_search/template
+{
+&amp;quot;id&amp;quot;: &amp;quot;synonym-graph-search&amp;quot;,
+&amp;quot;params&amp;quot;: {
+&amp;quot;query_string&amp;quot;: [&amp;quot;this&amp;quot;, &amp;quot;Very Important Thing&amp;quot;]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 1.4384103,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;test_index-1&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 1.4384103,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;description&amp;quot; : &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot; : &amp;quot;Very Important Thing&amp;quot;
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Instead of profiding one value we can replace it with a list. Good!&lt;/p>
+&lt;h2 id="metadata-of-the-search-template">Metadata of the search template&lt;/h2>
+&lt;p>It would be great to be able to store some metadata with the search template script, e.g. Git commit SHA of the query. I couldn't find a way to do this. A workaround might be to &lt;code>_name&lt;/code> attribute of the query. E.g.:&lt;/p>
+&lt;pre>&lt;code>POST _scripts/synonym-graph-search
+{
+&amp;quot;script&amp;quot;: {
+&amp;quot;lang&amp;quot;: &amp;quot;mustache&amp;quot;,
+&amp;quot;source&amp;quot;: {
+&amp;quot;query&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;entity&amp;quot;: {
+&amp;quot;_name&amp;quot;: &amp;quot;GIT COMMIT SHA&amp;quot;,
+&amp;quot;query&amp;quot;: &amp;quot;{{query_string}}&amp;quot;,
+&amp;quot;boost&amp;quot;: 5
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>&lt;p>The response:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 1.4384103,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;test_index-1&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 1.4384103,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;description&amp;quot; : &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot; : &amp;quot;Very Important Thing&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;GIT COMMIT SHA&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>&lt;p>Not great but might be useful.&lt;/p>
+&lt;h2 id="discussion">Discussion&lt;/h2>
+&lt;ul>
+&lt;li>Templates doesn't support search index specification.&lt;/li>
+&lt;li>Field names can be parameterized, this feature alows to start/stop using a new/old field.&lt;/li>
+&lt;li>Search template can be tested in (even in production cluster) independently.&lt;/li>
+&lt;li>We can run our query against &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-search-template.html">multiple search templates&lt;/a>. Combine this with the Profile API and performance can be compared. Explain API also is supported.&lt;/li>
+&lt;/ul></description></item><item><title>Phrase Search with Synonym Graph Token Filter in Elasticsearch</title><link>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</link><pubDate>Sun, 22 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</guid><description>&lt;p>I've &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">written&lt;/a> that if you google for &lt;code>How can you match a long query text to a short text field?&lt;/code> you're advised to use Elasticsearch Percolator. Today I'll show an alternative way of solving the same problem with Elasticsearch.&lt;/p>
 &lt;p>The main idea is to use &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/analysis-synonym-graph-tokenfilter.html">Synonym Graph Token Filter&lt;/a> with some data preparation.&lt;/p>
 &lt;h2 id="problem-statement">Problem Statement&lt;/h2>
 &lt;p>Say that we learned how extract some entity from free form text with techniques such as NER, dictionary annotations, or some fancy Machine Learning. And when this entity is mentioned in the search query we want to boost documents that mention this entity. Also, say you've ruled out using Elasticsearch Percolator because it increases network latency because it requires additional call to Elasticsearch.&lt;/p>

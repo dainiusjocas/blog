@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>search | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/search/</link><atom:link href="https://www.jocas.lt/blog/tags/search/index.xml" rel="self" type="application/rss+xml"/><description>search</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Wed, 18 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>search</title><link>https://www.jocas.lt/blog/tags/search/</link></image><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the &lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field">Stack Overflow page&lt;/a> &lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3">or here&lt;/a> where the answer is to use &lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>search | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/search/</link><atom:link href="https://www.jocas.lt/blog/tags/search/index.xml" rel="self" type="application/rss+xml"/><description>search</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Wed, 18 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>search</title><link>https://www.jocas.lt/blog/tags/search/</link></image><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the &lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field">Stack Overflow page&lt;/a> &lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3">or here&lt;/a> where the answer is to use &lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
 &lt;p>My search items are phrases meaning that it should match all terms in order. Let's create a sample setup in Kibana (v7.5) Dev dashboard.&lt;/p>
 &lt;ol>
 &lt;li>Create an index for percolation:&lt;/li>
@@ -17,7 +17,8 @@
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
 &lt;ol start="2">
 &lt;li>Store one phrase query:&lt;/li>
 &lt;/ol>
@@ -29,7 +30,8 @@
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;ol start="3">
+&lt;/code>&lt;/pre>
+&lt;ol start="3">
 &lt;li>Percolate a document:&lt;/li>
 &lt;/ol>
 &lt;pre>&lt;code>GET /my-index/_search?
@@ -50,7 +52,8 @@
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Note on &lt;code>&amp;quot;type&amp;quot;: &amp;quot;fvh&amp;quot;&lt;/code>: this instructs Elasticsearch to use the Fast Vector Highlighter.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Note on &lt;code>&amp;quot;type&amp;quot;: &amp;quot;fvh&amp;quot;&lt;/code>: this instructs Elasticsearch to use the Fast Vector Highlighter.&lt;/p>
 &lt;p>The query yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 23,
@@ -94,7 +97,8 @@
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>As we see highlighter correctly marker the search phrase.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>As we see highlighter correctly marker the search phrase.&lt;/p>
 &lt;h2 id="storing-additional-data-with-percolator-queries">Storing additional data with percolator queries&lt;/h2>
 &lt;p>Percolation result can be used to connect pieces of information in your system, e.g. store a &lt;code>subscriber_email&lt;/code> attribute of the user that wants to be notified when the query matches along with the percolator query.&lt;/p>
 &lt;pre>&lt;code>PUT /my-index/_doc/1?refresh
@@ -106,7 +110,8 @@
 },
 &amp;quot;subscriber_email&amp;quot;: &amp;quot;subscriber_email@example.com&amp;quot;
 }
-&lt;/code>&lt;/pre>&lt;p>Then query:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Then query:&lt;/p>
 &lt;pre>&lt;code>GET /my-index/_search?
 {
 &amp;quot;query&amp;quot;: {
@@ -125,7 +130,8 @@
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This query yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This query yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 10,
 &amp;quot;timed_out&amp;quot; : false,
@@ -169,4 +175,5 @@
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Now, take the email under the &lt;code>&amp;quot;subscriber_email&amp;quot;&lt;/code> from the response and send an email with the highlight.&lt;/p></description></item></channel></rss>
+&lt;/code>&lt;/pre>
+&lt;p>Now, take the email under the &lt;code>&amp;quot;subscriber_email&amp;quot;&lt;/code> from the response and send an email with the highlight.&lt;/p></description></item></channel></rss>

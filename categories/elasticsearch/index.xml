@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/categories/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Mon, 23 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>elasticsearch</title><link>https://www.jocas.lt/blog/categories/elasticsearch/</link></image><item><title>Using Search Templates in Elasticsearch</title><link>https://www.jocas.lt/blog/post/on-search-templates/</link><pubDate>Mon, 23 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/on-search-templates/</guid><description>&lt;p>I want to take a look at &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html">Search Templates&lt;/a> for Elasticsearch. Let's apply them to examples from &lt;a href="https://www.jocas.lt/blog/post/synonym-graph-phrase-search/">previous post on Synonym Graphs&lt;/a>.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/categories/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Mon, 23 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>elasticsearch</title><link>https://www.jocas.lt/blog/categories/elasticsearch/</link></image><item><title>Using Search Templates in Elasticsearch</title><link>https://www.jocas.lt/blog/post/on-search-templates/</link><pubDate>Mon, 23 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/on-search-templates/</guid><description>&lt;p>I want to take a look at &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html">Search Templates&lt;/a> for Elasticsearch. Let's apply them to examples from &lt;a href="https://www.jocas.lt/blog/post/synonym-graph-phrase-search/">previous post on Synonym Graphs&lt;/a>.&lt;/p>
 &lt;h2 id="setup">Setup&lt;/h2>
 &lt;p>I'm using Elasticsearch 7.5.1.&lt;/p>
 &lt;p>Index configuration:&lt;/p>
@@ -59,13 +59,15 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Index the document:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Index the document:&lt;/p>
 &lt;pre>&lt;code>PUT test_index-1/_doc/1
 {
 &amp;quot;description&amp;quot;: &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
 &amp;quot;entity&amp;quot;: &amp;quot;Very Important Thing&amp;quot;
 }
-&lt;/code>&lt;/pre>&lt;p>Search queries:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Search queries:&lt;/p>
 &lt;ul>
 &lt;li>&lt;code>prefix very important thing suffix&lt;/code>&lt;/li>
 &lt;/ul>
@@ -88,7 +90,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Try to run the search:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Try to run the search:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search/template
 {
 &amp;quot;id&amp;quot;: &amp;quot;synonym-graph-search&amp;quot;,
@@ -96,7 +99,8 @@ PUT /test_index-1
 &amp;quot;query_string&amp;quot;: &amp;quot;suffix very important thing prefix&amp;quot;
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -126,7 +130,8 @@ PUT /test_index-1
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Exactly as expected.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Exactly as expected.&lt;/p>
 &lt;p>When using a stored search template the Elasticsearch client doesn't need to handle the complex query construction.&lt;/p>
 &lt;h2 id="templates-are-updateable">Templates are updateable&lt;/h2>
 &lt;p>Let's try to update the template with a higher boost value:&lt;/p>
@@ -146,7 +151,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Works.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Works.&lt;/p>
 &lt;p>Now let's run the same query:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search/template
 {
@@ -155,7 +161,8 @@ PUT /test_index-1
 &amp;quot;query_string&amp;quot;: &amp;quot;suffix very important thing prefix&amp;quot;
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 4,
 &amp;quot;timed_out&amp;quot; : false,
@@ -185,7 +192,8 @@ PUT /test_index-1
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>The scores are 0.5753642 and 1.4384103 that is ~2/5. Cool! This means that without changing (and redeploying) the Elasticsearch client we can change the querying logic, making the query an more dynamic.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>The scores are 0.5753642 and 1.4384103 that is ~2/5. Cool! This means that without changing (and redeploying) the Elasticsearch client we can change the querying logic, making the query an more dynamic.&lt;/p>
 &lt;h2 id="corner-cases">Corner Cases&lt;/h2>
 &lt;p>What if we run query has more attributes, e.g.:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search/template
@@ -196,7 +204,8 @@ PUT /test_index-1
 &amp;quot;new_attr&amp;quot;: &amp;quot;123&amp;quot;
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Works as expected!&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Works as expected!&lt;/p>
 &lt;p>When &lt;code>query_string&lt;/code> is &lt;code>null&lt;/code>:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search/template
 {
@@ -205,7 +214,8 @@ PUT /test_index-1
 &amp;quot;query_string&amp;quot;: null
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Works!&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Works!&lt;/p>
 &lt;p>What if the param is not provided:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search/template
 {
@@ -214,7 +224,8 @@ PUT /test_index-1
 &amp;quot;new_attr&amp;quot;: &amp;quot;value&amp;quot;
 }
 }
-&lt;/code>&lt;/pre>&lt;p>No error!&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>No error!&lt;/p>
 &lt;p>What if we provide a list instead of a string:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search/template
 {
@@ -223,7 +234,8 @@ PUT /test_index-1
 &amp;quot;query_string&amp;quot;: [&amp;quot;this&amp;quot;, &amp;quot;Very Important Thing&amp;quot;]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -253,7 +265,8 @@ PUT /test_index-1
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Instead of profiding one value we can replace it with a list. Good!&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Instead of profiding one value we can replace it with a list. Good!&lt;/p>
 &lt;h2 id="metadata-of-the-search-template">Metadata of the search template&lt;/h2>
 &lt;p>It would be great to be able to store some metadata with the search template script, e.g. Git commit SHA of the query. I couldn't find a way to do this. A workaround might be to &lt;code>_name&lt;/code> attribute of the query. E.g.:&lt;/p>
 &lt;pre>&lt;code>POST _scripts/synonym-graph-search
@@ -273,7 +286,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>The response:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>The response:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -306,7 +320,8 @@ PUT /test_index-1
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Not great but might be useful.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Not great but might be useful.&lt;/p>
 &lt;h2 id="discussion">Discussion&lt;/h2>
 &lt;ul>
 &lt;li>Templates doesn't support search index specification.&lt;/li>
@@ -318,11 +333,12 @@ PUT /test_index-1
 &lt;h2 id="problem-statement">Problem Statement&lt;/h2>
 &lt;p>Say that we learned how extract some entity from free form text with techniques such as NER, dictionary annotations, or some fancy Machine Learning. And when this entity is mentioned in the search query we want to boost documents that mention this entity. Also, say you've ruled out using Elasticsearch Percolator because it increases network latency because it requires additional call to Elasticsearch.&lt;/p>
 &lt;p>For further discussion our unstructured text is going to be &lt;code>This description is about a Very Important Thing and something else.&lt;/code> and the extracted entity &lt;code>Very Important Thing&lt;/code>. Our test document looks like :&lt;/p>
-&lt;div class="highlight">&lt;pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-json" data-lang="json">{
-&lt;span style="color:#f92672">&amp;#34;description&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;This description is about a Very Important Thing and something else.&amp;#34;&lt;/span>,
-&lt;span style="color:#f92672">&amp;#34;entity&amp;#34;&lt;/span>: &lt;span style="color:#e6db74">&amp;#34;Very Important Thing&amp;#34;&lt;/span>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;description&amp;quot;: &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
+&amp;quot;entity&amp;quot;: &amp;quot;Very Important Thing&amp;quot;
 }
-&lt;/code>&lt;/pre>&lt;/div>&lt;p>Search queries:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Search queries:&lt;/p>
 &lt;ul>
 &lt;li>&lt;code>prefix very important thing suffix&lt;/code>&lt;/li>
 &lt;li>&lt;code>prefix very important another thing suffix&lt;/code>&lt;/li>
@@ -344,14 +360,16 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Entity field is of type &lt;code>text&lt;/code> because we want it to be searchable. &lt;code>keyword&lt;/code> type won't work because it does only exact matches and out query most likely will be longer than our entity string.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Entity field is of type &lt;code>text&lt;/code> because we want it to be searchable. &lt;code>keyword&lt;/code> type won't work because it does only exact matches and out query most likely will be longer than our entity string.&lt;/p>
 &lt;p>Index our document:&lt;/p>
 &lt;pre>&lt;code>PUT test_index-2/_doc/1
 {
 &amp;quot;description&amp;quot;: &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
 &amp;quot;entity&amp;quot;: &amp;quot;Very Important Thing&amp;quot;
 }
-&lt;/code>&lt;/pre>&lt;p>Search the index with the query that mentions our &lt;code>very important thing&lt;/code>:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Search the index with the query that mentions our &lt;code>very important thing&lt;/code>:&lt;/p>
 &lt;pre>&lt;code>GET test_index-2/_search
 {
 &amp;quot;query&amp;quot;: {
@@ -363,7 +381,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -393,7 +412,8 @@ PUT /test_index-1
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Cool, we found what we we looking for.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Cool, we found what we we looking for.&lt;/p>
 &lt;p>Let's try another query, this time with a mention of &lt;code>very important another thing&lt;/code>:&lt;/p>
 &lt;pre>&lt;code>GET test_index-2/_search
 {
@@ -406,7 +426,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -436,7 +457,8 @@ PUT /test_index-1
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Oh, the results are the same as with the previous query despite the fact that we mention &lt;code>Another Thing&lt;/code> here. But it still might be OK because we matched all the terms of the entity.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Oh, the results are the same as with the previous query despite the fact that we mention &lt;code>Another Thing&lt;/code> here. But it still might be OK because we matched all the terms of the entity.&lt;/p>
 &lt;p>Let's try another query:&lt;/p>
 &lt;pre>&lt;code>GET test_index-2/_search
 {
@@ -449,7 +471,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -479,7 +502,8 @@ PUT /test_index-1
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Oh no, we still matched our &lt;code>Very Important Thing&lt;/code> while only &lt;code>thing&lt;/code> term is present in the query. But at least this time the score is lower than with previous twoqueries, 0.5753642 vs. 1.7260926. Here we clearly see the problem: we are matching short strings with long strings and partial matches raises problems.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Oh no, we still matched our &lt;code>Very Important Thing&lt;/code> while only &lt;code>thing&lt;/code> term is present in the query. But at least this time the score is lower than with previous twoqueries, 0.5753642 vs. 1.7260926. Here we clearly see the problem: we are matching short strings with long strings and partial matches raises problems.&lt;/p>
 &lt;h2 id="proposed-solution">Proposed Solution&lt;/h2>
 &lt;p>Let's leverage Synonym Graph Token Filter to solve our problem.&lt;/p>
 &lt;pre>&lt;code>PUT /test_index-1
@@ -538,7 +562,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Let's decompose this large index configuration piece by piece:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Let's decompose this large index configuration piece by piece:&lt;/p>
 &lt;ol>
 &lt;li>The &lt;code>entity&lt;/code> attribute now has separate analyzers for both index and search phases.&lt;/li>
 &lt;li>The &lt;code>lowercase_keyword_analyzer&lt;/code> uses keyword tokenizer which means that tokenization will result in the sequence of token of size 1, then it normalizes tokens by lowercasing them and finally &lt;code>spaces_to_undescores_filter&lt;/code>, replaces spaces to underscores. E.g. a string &lt;code>&amp;quot;Very Important Thing&amp;quot;&lt;/code> is transformed into list of tokens &lt;code>[&amp;quot;very_important_thing&amp;quot;]&lt;/code>. Or use out friend &lt;code>_analyze&lt;/code> API:&lt;/li>
@@ -548,7 +573,8 @@ PUT /test_index-1
 &amp;quot;text&amp;quot;: [&amp;quot;Very Important Thing&amp;quot;],
 &amp;quot;analyzer&amp;quot;: &amp;quot;lowercase_keyword_analyzer&amp;quot;
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;tokens&amp;quot; : [
 {
@@ -560,7 +586,8 @@ PUT /test_index-1
 }
 ]
 }
-&lt;/code>&lt;/pre>&lt;ol start="3">
+&lt;/code>&lt;/pre>
+&lt;ol start="3">
 &lt;li>The &lt;code>synonym_graph_analyzer&lt;/code> use standard tokenizer, which is followed by the &lt;code>lowercase&lt;/code> filter, and then the &lt;code>my_synonym_graph&lt;/code> token filter is applied. We've set up one synonym &lt;code>&amp;quot;very important thing =&amp;gt; very_important_thing&amp;quot;&lt;/code>. E.g.&lt;/li>
 &lt;/ol>
 &lt;pre>&lt;code>POST test_index-1/_analyze
@@ -568,7 +595,8 @@ PUT /test_index-1
 &amp;quot;text&amp;quot;: [&amp;quot;prefix very important thing suffix&amp;quot;],
 &amp;quot;analyzer&amp;quot;: &amp;quot;synonym_graph_analyzer&amp;quot;
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;tokens&amp;quot; : [
 {
@@ -594,7 +622,8 @@ PUT /test_index-1
 }
 ]
 }
-&lt;/code>&lt;/pre>&lt;p>After analysis we have 3 tokens &lt;code>[&amp;quot;prefix&amp;quot;, &amp;quot;very_important_thing&amp;quot;, &amp;quot;suffix&amp;quot;]&lt;/code>. Notice &lt;code>&amp;quot;very_important_thing&amp;quot;&lt;/code> token: this is equal to the right-hand-side from our synonym definitions. Now let's run queries from the previous section:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>After analysis we have 3 tokens &lt;code>[&amp;quot;prefix&amp;quot;, &amp;quot;very_important_thing&amp;quot;, &amp;quot;suffix&amp;quot;]&lt;/code>. Notice &lt;code>&amp;quot;very_important_thing&amp;quot;&lt;/code> token: this is equal to the right-hand-side from our synonym definitions. Now let's run queries from the previous section:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search
 {
 &amp;quot;query&amp;quot;: {
@@ -606,7 +635,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -636,7 +666,8 @@ PUT /test_index-1
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>As expected: exact match -&amp;gt; hit.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>As expected: exact match -&amp;gt; hit.&lt;/p>
 &lt;p>Another query:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search
 {
@@ -649,7 +680,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 0,
 &amp;quot;timed_out&amp;quot; : false,
@@ -668,7 +700,8 @@ PUT /test_index-1
 &amp;quot;hits&amp;quot; : [ ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>No hits! Good! The document is not going to be boosted despite the fact that all tokens match.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>No hits! Good! The document is not going to be boosted despite the fact that all tokens match.&lt;/p>
 &lt;p>And the last one:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search
 {
@@ -681,7 +714,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -700,7 +734,8 @@ PUT /test_index-1
 &amp;quot;hits&amp;quot; : [ ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>No hits! Good. This means that also substring doesn't match.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>No hits! Good. This means that also substring doesn't match.&lt;/p>
 &lt;h2 id="discussion">Discussion&lt;/h2>
 &lt;p>Synonym Graph Token Filter can &amp;ldquo;replace&amp;rdquo; a sequence of tokens (e.g. a phrase) with another sequence of tokens. In this particular example: many tokens were replaced with one token.&lt;/p>
 &lt;ol>
@@ -726,7 +761,8 @@ PUT /test_index-1
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Then define 2 slightly different percolator queries (notice the difference between &lt;code>&amp;quot;bonsai tree&amp;quot;&lt;/code> and &lt;code>&amp;quot;bonsai, tree&amp;quot;&lt;/code>).&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Then define 2 slightly different percolator queries (notice the difference between &lt;code>&amp;quot;bonsai tree&amp;quot;&lt;/code> and &lt;code>&amp;quot;bonsai, tree&amp;quot;&lt;/code>).&lt;/p>
 &lt;pre>&lt;code>PUT /my-index/_doc/1?refresh
 {
 &amp;quot;query&amp;quot;: {
@@ -749,7 +785,8 @@ PUT /my-index/_doc/2?refresh
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Let's percolate:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Let's percolate:&lt;/p>
 &lt;pre>&lt;code>GET /my-index/_search?
 {
 &amp;quot;query&amp;quot;: {
@@ -768,7 +805,8 @@ PUT /my-index/_doc/2?refresh
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 80,
 &amp;quot;timed_out&amp;quot; : false,
@@ -840,7 +878,8 @@ PUT /my-index/_doc/2?refresh
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>As expected: 2 documents matched.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>As expected: 2 documents matched.&lt;/p>
 &lt;p>But now lets change the analyzer of the second percolation query to &lt;code>whitespace&lt;/code>:&lt;/p>
 &lt;pre>&lt;code>PUT /my-index/_doc/2?refresh
 {
@@ -853,7 +892,8 @@ PUT /my-index/_doc/2?refresh
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Run the percolator:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Run the percolator:&lt;/p>
 &lt;pre>&lt;code>
 GET /my-index/_search?
 {
@@ -873,7 +913,8 @@ GET /my-index/_search?
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 5,
 &amp;quot;timed_out&amp;quot; : false,
@@ -919,7 +960,8 @@ GET /my-index/_search?
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>As expected: only 1 percolator query matched our input.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>As expected: only 1 percolator query matched our input.&lt;/p>
 &lt;h2 id="phrases-with-stopwords">Phrases with Stopwords&lt;/h2>
 &lt;p>Say, we have a phrase &lt;code>&amp;quot;bonsai is tree&amp;quot;&lt;/code> and we percolate text &lt;code>A new bonsai in tree in the office&lt;/code> with the &lt;code>standard&lt;/code> analyzer for indexing and &lt;code>english&lt;/code> for search analyzer. There should be no matches. Let's try:&lt;/p>
 &lt;pre>&lt;code>DELETE my-index
@@ -967,7 +1009,8 @@ GET /my-index/_search?
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>And, surprisingly, this yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>And, surprisingly, this yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 2,
 &amp;quot;timed_out&amp;quot; : false,
@@ -1007,7 +1050,8 @@ GET /my-index/_search?
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>We have a match! Also notice that the highlighter is broken!&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>We have a match! Also notice that the highlighter is broken!&lt;/p>
 &lt;p>The problem that these two analyzers have different stopword lists (no stopwords for &lt;code>standard&lt;/code> and several English stopwords for &lt;code>english&lt;/code> analyzer) and the phrase contains a stopword that is not shared between analyzers.&lt;/p>
 &lt;p>Let's fix this surprise with &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer.html#search-quote-analyzer">&lt;code>search_quote_analyzer&lt;/code>&lt;/a>.&lt;/p>
 &lt;pre>&lt;code>DELETE my-index
@@ -1056,7 +1100,8 @@ GET /my-index/_search?
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 1,
 &amp;quot;timed_out&amp;quot; : false,
@@ -1075,7 +1120,8 @@ GET /my-index/_search?
 &amp;quot;hits&amp;quot; : [ ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>No hits, as expected.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>No hits, as expected.&lt;/p>
 &lt;p>Let's check if the expected behaviour is still there:&lt;/p>
 &lt;pre>&lt;code>GET /my-index/_search?
 {
@@ -1095,7 +1141,8 @@ GET /my-index/_search?
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 4,
 &amp;quot;timed_out&amp;quot; : false,
@@ -1140,7 +1187,8 @@ GET /my-index/_search?
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Good. Even the highlighting works.&lt;/p></description></item><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the &lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field">Stack Overflow page&lt;/a> &lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3">or here&lt;/a> where the answer is to use &lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Good. Even the highlighting works.&lt;/p></description></item><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the &lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field">Stack Overflow page&lt;/a> &lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3">or here&lt;/a> where the answer is to use &lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
 &lt;p>My search items are phrases meaning that it should match all terms in order. Let's create a sample setup in Kibana (v7.5) Dev dashboard.&lt;/p>
 &lt;ol>
 &lt;li>Create an index for percolation:&lt;/li>
@@ -1159,7 +1207,8 @@ GET /my-index/_search?
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
 &lt;ol start="2">
 &lt;li>Store one phrase query:&lt;/li>
 &lt;/ol>
@@ -1171,7 +1220,8 @@ GET /my-index/_search?
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;ol start="3">
+&lt;/code>&lt;/pre>
+&lt;ol start="3">
 &lt;li>Percolate a document:&lt;/li>
 &lt;/ol>
 &lt;pre>&lt;code>GET /my-index/_search?
@@ -1192,7 +1242,8 @@ GET /my-index/_search?
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Note on &lt;code>&amp;quot;type&amp;quot;: &amp;quot;fvh&amp;quot;&lt;/code>: this instructs Elasticsearch to use the Fast Vector Highlighter.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Note on &lt;code>&amp;quot;type&amp;quot;: &amp;quot;fvh&amp;quot;&lt;/code>: this instructs Elasticsearch to use the Fast Vector Highlighter.&lt;/p>
 &lt;p>The query yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 23,
@@ -1236,7 +1287,8 @@ GET /my-index/_search?
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>As we see highlighter correctly marker the search phrase.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>As we see highlighter correctly marker the search phrase.&lt;/p>
 &lt;h2 id="storing-additional-data-with-percolator-queries">Storing additional data with percolator queries&lt;/h2>
 &lt;p>Percolation result can be used to connect pieces of information in your system, e.g. store a &lt;code>subscriber_email&lt;/code> attribute of the user that wants to be notified when the query matches along with the percolator query.&lt;/p>
 &lt;pre>&lt;code>PUT /my-index/_doc/1?refresh
@@ -1248,7 +1300,8 @@ GET /my-index/_search?
 },
 &amp;quot;subscriber_email&amp;quot;: &amp;quot;subscriber_email@example.com&amp;quot;
 }
-&lt;/code>&lt;/pre>&lt;p>Then query:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>Then query:&lt;/p>
 &lt;pre>&lt;code>GET /my-index/_search?
 {
 &amp;quot;query&amp;quot;: {
@@ -1267,7 +1320,8 @@ GET /my-index/_search?
 }
 }
 }
-&lt;/code>&lt;/pre>&lt;p>This query yields:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>This query yields:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;took&amp;quot; : 10,
 &amp;quot;timed_out&amp;quot; : false,
@@ -1311,4 +1365,5 @@ GET /my-index/_search?
 ]
 }
 }
-&lt;/code>&lt;/pre>&lt;p>Now, take the email under the &lt;code>&amp;quot;subscriber_email&amp;quot;&lt;/code> from the response and send an email with the highlight.&lt;/p></description></item></channel></rss>
+&lt;/code>&lt;/pre>
+&lt;p>Now, take the email under the &lt;code>&amp;quot;subscriber_email&amp;quot;&lt;/code> from the response and send an email with the highlight.&lt;/p></description></item></channel></rss>

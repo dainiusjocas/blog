@@ -1,20 +1,23 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>aws | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/aws/</link><atom:link href="https://www.jocas.lt/blog/categories/aws/index.xml" rel="self" type="application/rss+xml"/><description>aws</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><lastBuildDate>Fri, 15 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/img/icon-192.png</url><title>aws</title><link>https://www.jocas.lt/blog/categories/aws/</link></image><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>&lt;p>I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I'm going to answer in this blog post is: how to build an uberjar for AWS Lambda with &lt;a href="https://github.com/tonsky/uberdeps">Uberdeps&lt;/a>?&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>aws | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/aws/</link><atom:link href="https://www.jocas.lt/blog/categories/aws/index.xml" rel="self" type="application/rss+xml"/><description>aws</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Fri, 15 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>aws</title><link>https://www.jocas.lt/blog/categories/aws/</link></image><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>&lt;p>I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I'm going to answer in this blog post is: how to build an uberjar for AWS Lambda with &lt;a href="https://github.com/tonsky/uberdeps">Uberdeps&lt;/a>?&lt;/p>
 &lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>Add an alias to the &lt;code>deps.edn&lt;/code> for uberjar building:&lt;/p>
 &lt;pre>&lt;code>{:aliases {:uberjar
 {:extra-deps {uberdeps {:mvn/version &amp;quot;0.1.6&amp;quot;}}
 :main-opts [&amp;quot;-m&amp;quot; &amp;quot;uberdeps.uberjar&amp;quot;]}}}
-&lt;/code>&lt;/pre>&lt;p>Create an executable file &lt;code>compile.clj&lt;/code> in the project root folder:&lt;/p>
-&lt;div class="highlight">&lt;pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-bash" data-lang="bash">touch compile.clj
+&lt;/code>&lt;/pre>
+&lt;p>Create an executable file &lt;code>compile.clj&lt;/code> in the project root folder:&lt;/p>
+&lt;pre>&lt;code class="language-bash">touch compile.clj
 chmod +x compile.clj
-&lt;/code>&lt;/pre>&lt;/div>&lt;p>Put this code in the &lt;code>compile.clj&lt;/code> file:&lt;/p>
-&lt;!-- raw HTML omitted -->
+&lt;/code>&lt;/pre>
+&lt;p>Put this code in the &lt;code>compile.clj&lt;/code> file:&lt;/p>
+&lt;script src="https://gist.github.com/dainiusjocas/e9b154d7a1cbdca8558cd7c5d730d5d0.js">&lt;/script>
 &lt;p>Run:&lt;/p>
-&lt;div class="highlight">&lt;pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4">&lt;code class="language-bash" data-lang="bash">&lt;span style="color:#f92672">(&lt;/span>rm -rf classes &lt;span style="color:#f92672">&amp;amp;&amp;amp;&lt;/span> &lt;span style="color:#ae81ff">\
-&lt;/span>&lt;span style="color:#ae81ff">&lt;/span> mkdir classes &lt;span style="color:#f92672">&amp;amp;&amp;amp;&lt;/span> &lt;span style="color:#ae81ff">\
-&lt;/span>&lt;span style="color:#ae81ff">&lt;/span> ./compile.clj &lt;span style="color:#f92672">&amp;amp;&amp;amp;&lt;/span> &lt;span style="color:#ae81ff">\
-&lt;/span>&lt;span style="color:#ae81ff">&lt;/span> clojure -A:uberjar --target target/UBERJAR_NAME.jar&lt;span style="color:#f92672">)&lt;/span>
-&lt;/code>&lt;/pre>&lt;/div>&lt;p>I'd advise put that last script into a &lt;code>Makefile&lt;/code> ;)&lt;/p>
+&lt;pre>&lt;code class="language-bash">(rm -rf classes &amp;amp;&amp;amp; \
+mkdir classes &amp;amp;&amp;amp; \
+./compile.clj &amp;amp;&amp;amp; \
+clojure -A:uberjar --target target/UBERJAR_NAME.jar)
+&lt;/code>&lt;/pre>
+&lt;p>I'd advise put that last script into a &lt;code>Makefile&lt;/code> ;)&lt;/p>
 &lt;hr>
 &lt;h2 id="introduction">Introduction&lt;/h2>
 &lt;p>To deploy your Clojure code to AWS Lambda you need to package it as an uberjar. If your project is managed with &lt;code>deps.edn&lt;/code>, basically you're on your own to find a suitable library to package your code.&lt;/p>
@@ -35,7 +38,8 @@ chmod +x compile.clj
 &lt;pre>&lt;code>{
 &amp;quot;message&amp;quot; : &amp;quot;Internal server error&amp;quot;
 }
-&lt;/code>&lt;/pre>&lt;p>After searching through the AWS CloudWatch logs I've found:&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>After searching through the AWS CloudWatch logs I've found:&lt;/p>
 &lt;pre>&lt;code>Class not found: my.Lambda: java.lang.ClassNotFoundException
 java.lang.ClassNotFoundException: my.Lambda
 at java.net.URLClassLoader.findClass(URLClassLoader.java:382)
@@ -43,13 +47,14 @@ at java.lang.ClassLoader.loadClass(ClassLoader.java:424)
 at java.lang.ClassLoader.loadClass(ClassLoader.java:357)
 at java.lang.Class.forName0(Native Method)
 at java.lang.Class.forName(Class.java:348)
-&lt;/code>&lt;/pre>&lt;p>The &lt;code>my.Lambda&lt;/code> class was not found.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>The &lt;code>my.Lambda&lt;/code> class was not found.&lt;/p>
 &lt;p>After taking a look at the contents of the uberjar I've noticed that the &lt;code>my.Lambda&lt;/code> class is indeed not inside the Uberjar. Ah, it seems that AOT (Ahead-of-Time) is not done out of the box. After searching and not finding a flag or some parameter that I need to pass to force the AOT compilation in the Uberdeps README, I've discovered an already closed &lt;a href="https://github.com/tonsky/uberdeps/pull/11">pull request&lt;/a>: the AOT compilation functionality is not implemented.&lt;/p>
 &lt;p>I was in trouble.&lt;/p>
 &lt;h2 id="solution">Solution&lt;/h2>
 &lt;p>The solution was to manually perform AOT compilation of the relevant namespaces right before building an uberjar and then instruct Uberdeps to put the resulting class files into the uberjar.&lt;/p>
 &lt;p>To do AOT compilation I've written a Clojure script &lt;code>compile.clj&lt;/code>:&lt;/p>
-&lt;!-- raw HTML omitted -->
+&lt;script src="https://gist.github.com/dainiusjocas/e9b154d7a1cbdca8558cd7c5d730d5d0.js">&lt;/script>
 &lt;p>Inspiration on how to write the script was taken from &lt;a href="https://www.reddit.com/r/Clojure/comments/8ltsrs/standalone_script_with_clj_including_dependencies/">here&lt;/a> and &lt;a href="https://github.com/tonsky/datascript/blob/master/release.clj">here&lt;/a>.&lt;/p>
 &lt;p>To instruct Uberdeps to put class files to the uberjar I've added &lt;code>classes&lt;/code> directory to the &lt;code>:paths&lt;/code> vector in &lt;code>deps.edn&lt;/code>.&lt;/p>
 &lt;p>Just for the convenience, in the Makefile I've put commands for AOT compilation right before the command to build an uberjar:&lt;/p>
@@ -58,7 +63,8 @@ rm -rf classes
 mkdir classes
 ./compile.clj
 clojure -A:uberjar --target target/my-jar-name.jar
-&lt;/code>&lt;/pre>&lt;p>And that is it! I have an uberjar with &lt;code>my.Lambda&lt;/code> class and the AWS Lambda runtime is happy.&lt;/p>
+&lt;/code>&lt;/pre>
+&lt;p>And that is it! I have an uberjar with &lt;code>my.Lambda&lt;/code> class and the AWS Lambda runtime is happy.&lt;/p>
 &lt;h2 id="discussion">Discussion&lt;/h2>
 &lt;p>The solution is not bullet proof because:&lt;/p>
 &lt;ul>

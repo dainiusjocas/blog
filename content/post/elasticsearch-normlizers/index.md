@@ -9,7 +9,7 @@ categories:
   - Elasticsearch
 summary: In this article I'll explain what the normalizer is and show it's use case for **normalizing** URLs.
 image:
-  caption: "[Photo by ze intenets](https://github.com/borkdude/babashka)"
+  caption: "[Photo by ze intenets](https://mp4gain.com/mp4gain/wp-content/uploads/2019/12/normalize-audio-1.jpg)"
   focal_point: "Center"
   placement: 1
   preview_only: false

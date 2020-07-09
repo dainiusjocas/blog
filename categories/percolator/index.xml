@@ -1,5 +1,6 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>percolator | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/percolator/</link><atom:link href="https://www.jocas.lt/blog/categories/percolator/index.xml" rel="self" type="application/rss+xml"/><description>percolator</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Wed, 18 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>percolator</title><link>https://www.jocas.lt/blog/categories/percolator/</link></image><item><title>Elasticsearch Percolator and Text Analyzers</title><link>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</guid><description>&lt;p>This time I need to percolate texts with different analyzers for index and search analyzers.&lt;/p>
-&lt;p>Let's elaborate a bit on &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">previous article&lt;/a> and explicitly declare analyzers to use.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>percolator | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/percolator/</link><atom:link href="https://www.jocas.lt/blog/categories/percolator/index.xml" rel="self" type="application/rss+xml"/><description>percolator</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Wed, 18 Dec 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>percolator</title><link>https://www.jocas.lt/blog/categories/percolator/</link></image><item><title>Elasticsearch Percolator and Text Analyzers</title><link>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</guid><description>&lt;p>This time I need to percolate texts with different analyzers for index and search analyzers.&lt;/p>
+&lt;p>Let&amp;rsquo;s elaborate a bit on
+&lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/" target="_blank" rel="noopener">previous article&lt;/a> and explicitly declare analyzers to use.&lt;/p>
 &lt;p>Define index:&lt;/p>
 &lt;pre>&lt;code>PUT /my-index
 {
@@ -41,7 +42,7 @@ PUT /my-index/_doc/2?refresh
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Let's percolate:&lt;/p>
+&lt;p>Let&amp;rsquo;s percolate:&lt;/p>
 &lt;pre>&lt;code>GET /my-index/_search?
 {
 &amp;quot;query&amp;quot;: {
@@ -218,7 +219,7 @@ GET /my-index/_search?
 &lt;/code>&lt;/pre>
 &lt;p>As expected: only 1 percolator query matched our input.&lt;/p>
 &lt;h2 id="phrases-with-stopwords">Phrases with Stopwords&lt;/h2>
-&lt;p>Say, we have a phrase &lt;code>&amp;quot;bonsai is tree&amp;quot;&lt;/code> and we percolate text &lt;code>A new bonsai in tree in the office&lt;/code> with the &lt;code>standard&lt;/code> analyzer for indexing and &lt;code>english&lt;/code> for search analyzer. There should be no matches. Let's try:&lt;/p>
+&lt;p>Say, we have a phrase &lt;code>&amp;quot;bonsai is tree&amp;quot;&lt;/code> and we percolate text &lt;code>A new bonsai in tree in the office&lt;/code> with the &lt;code>standard&lt;/code> analyzer for indexing and &lt;code>english&lt;/code> for search analyzer. There should be no matches. Let&amp;rsquo;s try:&lt;/p>
 &lt;pre>&lt;code>DELETE my-index
 PUT /my-index
 {
@@ -308,7 +309,8 @@ GET /my-index/_search?
 &lt;/code>&lt;/pre>
 &lt;p>We have a match! Also notice that the highlighter is broken!&lt;/p>
 &lt;p>The problem that these two analyzers have different stopword lists (no stopwords for &lt;code>standard&lt;/code> and several English stopwords for &lt;code>english&lt;/code> analyzer) and the phrase contains a stopword that is not shared between analyzers.&lt;/p>
-&lt;p>Let's fix this surprise with &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer.html#search-quote-analyzer">&lt;code>search_quote_analyzer&lt;/code>&lt;/a>.&lt;/p>
+&lt;p>Let&amp;rsquo;s fix this surprise with
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer.html#search-quote-analyzer" target="_blank" rel="noopener">&lt;code>search_quote_analyzer&lt;/code>&lt;/a>.&lt;/p>
 &lt;pre>&lt;code>DELETE my-index
 PUT /my-index
 {
@@ -377,7 +379,7 @@ GET /my-index/_search?
 }
 &lt;/code>&lt;/pre>
 &lt;p>No hits, as expected.&lt;/p>
-&lt;p>Let's check if the expected behaviour is still there:&lt;/p>
+&lt;p>Let&amp;rsquo;s check if the expected behaviour is still there:&lt;/p>
 &lt;pre>&lt;code>GET /my-index/_search?
 {
 &amp;quot;query&amp;quot;: {
@@ -443,8 +445,11 @@ GET /my-index/_search?
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Good. Even the highlighting works.&lt;/p></description></item><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the &lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field">Stack Overflow page&lt;/a> &lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3">or here&lt;/a> where the answer is to use &lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
-&lt;p>My search items are phrases meaning that it should match all terms in order. Let's create a sample setup in Kibana (v7.5) Dev dashboard.&lt;/p>
+&lt;p>Good. Even the highlighting works.&lt;/p></description></item><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the
+&lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field" target="_blank" rel="noopener">Stack Overflow page&lt;/a>
+&lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3" target="_blank" rel="noopener">or here&lt;/a> where the answer is to use
+&lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
+&lt;p>My search items are phrases meaning that it should match all terms in order. Let&amp;rsquo;s create a sample setup in Kibana (v7.5) Dev dashboard.&lt;/p>
 &lt;ol>
 &lt;li>Create an index for percolation:&lt;/li>
 &lt;/ol>
@@ -463,7 +468,8 @@ GET /my-index/_search?
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
+&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter" target="_blank" rel="noopener">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
 &lt;ol start="2">
 &lt;li>Store one phrase query:&lt;/li>
 &lt;/ol>

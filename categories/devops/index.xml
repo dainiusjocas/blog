@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>devops | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/devops/</link><atom:link href="https://www.jocas.lt/blog/categories/devops/index.xml" rel="self" type="application/rss+xml"/><description>devops</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Fri, 15 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>devops</title><link>https://www.jocas.lt/blog/categories/devops/</link></image><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>&lt;p>I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I'm going to answer in this blog post is: how to build an uberjar for AWS Lambda with &lt;a href="https://github.com/tonsky/uberdeps">Uberdeps&lt;/a>?&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>devops | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/devops/</link><atom:link href="https://www.jocas.lt/blog/categories/devops/index.xml" rel="self" type="application/rss+xml"/><description>devops</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Fri, 15 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>devops</title><link>https://www.jocas.lt/blog/categories/devops/</link></image><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>&lt;p>I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I&amp;rsquo;m going to answer in this blog post is: how to build an uberjar for AWS Lambda with
+&lt;a href="https://github.com/tonsky/uberdeps" target="_blank" rel="noopener">Uberdeps&lt;/a>?&lt;/p>
 &lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>Add an alias to the &lt;code>deps.edn&lt;/code> for uberjar building:&lt;/p>
 &lt;pre>&lt;code>{:aliases {:uberjar
@@ -17,29 +18,34 @@ mkdir classes &amp;amp;&amp;amp; \
 ./compile.clj &amp;amp;&amp;amp; \
 clojure -A:uberjar --target target/UBERJAR_NAME.jar)
 &lt;/code>&lt;/pre>
-&lt;p>I'd advise put that last script into a &lt;code>Makefile&lt;/code> ;)&lt;/p>
+&lt;p>I&amp;rsquo;d advise put that last script into a &lt;code>Makefile&lt;/code> ;)&lt;/p>
 &lt;hr>
 &lt;h2 id="introduction">Introduction&lt;/h2>
-&lt;p>To deploy your Clojure code to AWS Lambda you need to package it as an uberjar. If your project is managed with &lt;code>deps.edn&lt;/code>, basically you're on your own to find a suitable library to package your code.&lt;/p>
-&lt;p>For some time to build uberjars for &lt;code>deps.edn&lt;/code> projects I was using &lt;a href="https://github.com/luchiniatwork/cambada">Cambada&lt;/a>. It did the job but I was not entirely happy with the library for a couple of reasons:&lt;/p>
+&lt;p>To deploy your Clojure code to AWS Lambda you need to package it as an uberjar. If your project is managed with &lt;code>deps.edn&lt;/code>, basically you&amp;rsquo;re on your own to find a suitable library to package your code.&lt;/p>
+&lt;p>For some time to build uberjars for &lt;code>deps.edn&lt;/code> projects I was using
+&lt;a href="https://github.com/luchiniatwork/cambada" target="_blank" rel="noopener">Cambada&lt;/a>. It did the job but I was not entirely happy with the library for a couple of reasons:&lt;/p>
 &lt;ul>
 &lt;li>the library seems to be no longer maintained;&lt;/li>
-&lt;li>it has various &lt;a href="https://github.com/luchiniatwork/cambada/issues">bugs&lt;/a> with transitive Git dependencies. I've found out that these bugs are fixed in a &lt;a href="https://github.com/xfthhxk/cambada">fork&lt;/a> of the Cambada and I used it as a git dependency.&lt;/li>
+&lt;li>it has various
+&lt;a href="https://github.com/luchiniatwork/cambada/issues" target="_blank" rel="noopener">bugs&lt;/a> with transitive Git dependencies. I&amp;rsquo;ve found out that these bugs are fixed in a
+&lt;a href="https://github.com/xfthhxk/cambada" target="_blank" rel="noopener">fork&lt;/a> of the Cambada and I used it as a git dependency.&lt;/li>
 &lt;/ul>
 &lt;p>Because building an uberjar for &lt;code>deps.edn&lt;/code> boils down to just finding a library there is always temptation to try something new.&lt;/p>
 &lt;h2 id="enter-uberdeps">Enter Uberdeps&lt;/h2>
-&lt;p>For my toy project I wanted to try out &lt;a href="https://github.com/tonsky/uberdeps">Uberdeps&lt;/a>. The introduction &lt;a href="https://tonsky.me/blog/uberdeps/">blog post&lt;/a> got me interested and I really liked the main idea:&lt;/p>
+&lt;p>For my toy project I wanted to try out
+&lt;a href="https://github.com/tonsky/uberdeps" target="_blank" rel="noopener">Uberdeps&lt;/a>. The introduction
+&lt;a href="https://tonsky.me/blog/uberdeps/" target="_blank" rel="noopener">blog post&lt;/a> got me interested and I really liked the main idea:&lt;/p>
 &lt;blockquote>
 &lt;p>Takes deps.edn and packs an uberjar out of it.&lt;/p>
 &lt;/blockquote>
 &lt;p>Sounds like exactly what I need.&lt;/p>
 &lt;h2 id="trouble">Trouble&lt;/h2>
-&lt;p>I've written my application, added all the things needed to deploy it as an AWS Lambda, build an uberjar with Uberdeps, deployed the app with the AWS CloudFormation, but when I've invoked the Lambda I've received an error:&lt;/p>
+&lt;p>I&amp;rsquo;ve written my application, added all the things needed to deploy it as an AWS Lambda, build an uberjar with Uberdeps, deployed the app with the AWS CloudFormation, but when I&amp;rsquo;ve invoked the Lambda I&amp;rsquo;ve received an error:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;message&amp;quot; : &amp;quot;Internal server error&amp;quot;
 }
 &lt;/code>&lt;/pre>
-&lt;p>After searching through the AWS CloudWatch logs I've found:&lt;/p>
+&lt;p>After searching through the AWS CloudWatch logs I&amp;rsquo;ve found:&lt;/p>
 &lt;pre>&lt;code>Class not found: my.Lambda: java.lang.ClassNotFoundException
 java.lang.ClassNotFoundException: my.Lambda
 at java.net.URLClassLoader.findClass(URLClassLoader.java:382)
@@ -49,15 +55,18 @@ at java.lang.Class.forName0(Native Method)
 at java.lang.Class.forName(Class.java:348)
 &lt;/code>&lt;/pre>
 &lt;p>The &lt;code>my.Lambda&lt;/code> class was not found.&lt;/p>
-&lt;p>After taking a look at the contents of the uberjar I've noticed that the &lt;code>my.Lambda&lt;/code> class is indeed not inside the Uberjar. Ah, it seems that AOT (Ahead-of-Time) is not done out of the box. After searching and not finding a flag or some parameter that I need to pass to force the AOT compilation in the Uberdeps README, I've discovered an already closed &lt;a href="https://github.com/tonsky/uberdeps/pull/11">pull request&lt;/a>: the AOT compilation functionality is not implemented.&lt;/p>
+&lt;p>After taking a look at the contents of the uberjar I&amp;rsquo;ve noticed that the &lt;code>my.Lambda&lt;/code> class is indeed not inside the Uberjar. Ah, it seems that AOT (Ahead-of-Time) is not done out of the box. After searching and not finding a flag or some parameter that I need to pass to force the AOT compilation in the Uberdeps README, I&amp;rsquo;ve discovered an already closed
+&lt;a href="https://github.com/tonsky/uberdeps/pull/11" target="_blank" rel="noopener">pull request&lt;/a>: the AOT compilation functionality is not implemented.&lt;/p>
 &lt;p>I was in trouble.&lt;/p>
 &lt;h2 id="solution">Solution&lt;/h2>
 &lt;p>The solution was to manually perform AOT compilation of the relevant namespaces right before building an uberjar and then instruct Uberdeps to put the resulting class files into the uberjar.&lt;/p>
-&lt;p>To do AOT compilation I've written a Clojure script &lt;code>compile.clj&lt;/code>:&lt;/p>
+&lt;p>To do AOT compilation I&amp;rsquo;ve written a Clojure script &lt;code>compile.clj&lt;/code>:&lt;/p>
 &lt;script src="https://gist.github.com/dainiusjocas/e9b154d7a1cbdca8558cd7c5d730d5d0.js">&lt;/script>
-&lt;p>Inspiration on how to write the script was taken from &lt;a href="https://www.reddit.com/r/Clojure/comments/8ltsrs/standalone_script_with_clj_including_dependencies/">here&lt;/a> and &lt;a href="https://github.com/tonsky/datascript/blob/master/release.clj">here&lt;/a>.&lt;/p>
-&lt;p>To instruct Uberdeps to put class files to the uberjar I've added &lt;code>classes&lt;/code> directory to the &lt;code>:paths&lt;/code> vector in &lt;code>deps.edn&lt;/code>.&lt;/p>
-&lt;p>Just for the convenience, in the Makefile I've put commands for AOT compilation right before the command to build an uberjar:&lt;/p>
+&lt;p>Inspiration on how to write the script was taken from
+&lt;a href="https://www.reddit.com/r/Clojure/comments/8ltsrs/standalone_script_with_clj_including_dependencies/" target="_blank" rel="noopener">here&lt;/a> and
+&lt;a href="https://github.com/tonsky/datascript/blob/master/release.clj" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
+&lt;p>To instruct Uberdeps to put class files to the uberjar I&amp;rsquo;ve added &lt;code>classes&lt;/code> directory to the &lt;code>:paths&lt;/code> vector in &lt;code>deps.edn&lt;/code>.&lt;/p>
+&lt;p>Just for the convenience, in the Makefile I&amp;rsquo;ve put commands for AOT compilation right before the command to build an uberjar:&lt;/p>
 &lt;pre>&lt;code>uberjar:
 rm -rf classes
 mkdir classes
@@ -72,7 +81,7 @@ clojure -A:uberjar --target target/my-jar-name.jar
 &lt;li>compiled classes are put in the &lt;code>classes&lt;/code> directory;&lt;/li>
 &lt;li>the alias for which namespaces should be AOT compiled is the default alias.&lt;/li>
 &lt;/ul>
-&lt;p>I hope that when a more generic solution will be needed either the Uberdeps will have an option for AOT compilatoin or I'll be clever enough to deal with the situation and write a follow up blog post with the workaround.&lt;/p></description></item><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</guid><description>&lt;p>I want to share my hard-won lessons on how to setup the Gitlab CI for Clojure projects based on tools.deps. I think that the Gitlab CI is a wonderful tool for CI workloads. But when you're going a bit sideways from the documented ways of doing things you have to do a bit of discovery for yourself.&lt;/p>
+&lt;p>I hope that when a more generic solution will be needed either the Uberdeps will have an option for AOT compilatoin or I&amp;rsquo;ll be clever enough to deal with the situation and write a follow up blog post with the workaround.&lt;/p></description></item><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</guid><description>&lt;p>I want to share my hard-won lessons on how to setup the Gitlab CI for Clojure projects based on tools.deps. I think that the Gitlab CI is a wonderful tool for CI workloads. But when you&amp;rsquo;re going a bit sideways from the documented ways of doing things you have to do a bit of discovery for yourself.&lt;/p>
 &lt;h2 id="gitlab-ci-cachesetup">Gitlab CI Cache Setup&lt;/h2>
 &lt;p>Usually I want to cache dependencies between all build and all branches. To achieve this I hard-code the cache key at the root of the &lt;code>.gitlab-ci.yml&lt;/code> file e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-yaml">cache:
@@ -89,7 +98,8 @@ key: one-key-to-rule-them-all
 paths:
 - ./.m2/repository
 &lt;/code>&lt;/pre>
-&lt;p>When it comes to gitlibs there is no public API for changing the default directory in &lt;code>tools.deps&lt;/code>. But the underlying &lt;code>tools.gitlibs&lt;/code> uses an environment variable to set where to store the &lt;a href="https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23">gitlibs conveniently named &lt;strong>GITLIBS&lt;/strong>&lt;/a>. E.g.&lt;/p>
+&lt;p>When it comes to gitlibs there is no public API for changing the default directory in &lt;code>tools.deps&lt;/code>. But the underlying &lt;code>tools.gitlibs&lt;/code> uses an environment variable to set where to store the
+&lt;a href="https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23" target="_blank" rel="noopener">gitlibs conveniently named &lt;strong>GITLIBS&lt;/strong>&lt;/a>. E.g.&lt;/p>
 &lt;pre>&lt;code class="language-bash">$ (export GITLIBS=&amp;quot;.gitlibs/&amp;quot; &amp;amp;&amp;amp; clojure -A:test)
 &lt;/code>&lt;/pre>
 &lt;p>Of course, we should not forget to configure the cache:&lt;/p>
@@ -108,7 +118,10 @@ paths:
 - ./.m2/repository
 - ./.gitlibs
 &lt;/code>&lt;/pre>
-&lt;p>If you want to disable cache for a particular job (e.g. you're linting with &lt;a href="https://github.com/borkdude/clj-kondo">clj-kondo&lt;/a>, which is delivered as a &lt;a href="https://www.graalvm.org/">GraalVM&lt;/a> compiled &lt;a href="https://www.graalvm.org/docs/reference-manual/native-image/">native image&lt;/a>), just give an empty map for a job's cache setup, e.g.:&lt;/p>
+&lt;p>If you want to disable cache for a particular job (e.g. you&amp;rsquo;re linting with
+&lt;a href="https://github.com/borkdude/clj-kondo" target="_blank" rel="noopener">clj-kondo&lt;/a>, which is delivered as a
+&lt;a href="https://www.graalvm.org/" target="_blank" rel="noopener">GraalVM&lt;/a> compiled
+&lt;a href="https://www.graalvm.org/docs/reference-manual/native-image/" target="_blank" rel="noopener">native image&lt;/a>), just give an empty map for a job&amp;rsquo;s cache setup, e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-yaml">lint:
 stage: test
 image: borkdude/clj-kondo
@@ -117,5 +130,7 @@ when: always
 script:
 - clj-kondo --lint src test
 &lt;/code>&lt;/pre>
-&lt;p>I've used the Gitlab CI cache while working on a streaming-text search library &lt;a href="https://github.com/tokenmill/beagle">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found &lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml">here&lt;/a>.&lt;/p>
+&lt;p>I&amp;rsquo;ve used the Gitlab CI cache while working on a streaming-text search library
+&lt;a href="https://github.com/tokenmill/beagle" target="_blank" rel="noopener">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found
+&lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
 &lt;p>Hope this helps!&lt;/p></description></item></channel></rss>

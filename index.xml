@@ -1,16 +1,235 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link><atom:link href="https://www.jocas.lt/blog/index.xml" rel="self" type="application/rss+xml"/><description>Dainius Jocas</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Sat, 21 Mar 2020 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link></image><item><title>Deploy babashka script to AWS Lambda</title><link>https://www.jocas.lt/blog/post/babashka-aws-lambda/</link><pubDate>Sat, 21 Mar 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/babashka-aws-lambda/</guid><description>&lt;p>TL;DR&lt;/p>
-&lt;p>I've managed to package a simple &lt;a href="https://github.com/borkdude/babashka">babashka&lt;/a> script to an AWS Lambda Custom Runtime. &lt;a href="https://github.com/dainiusjocas/babashka-lambda">Here&lt;/a> is the code, try for yourself.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link><atom:link href="https://www.jocas.lt/blog/index.xml" rel="self" type="application/rss+xml"/><description>Dainius Jocas</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Wed, 08 Jul 2020 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link></image><item><title>A Neat Trick with Elasticsearch Normalizers</title><link>https://www.jocas.lt/blog/post/elasticsearch-normlizers/</link><pubDate>Wed, 08 Jul 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/elasticsearch-normlizers/</guid><description>&lt;p>To analyze the textual data Elasticsearch uses &lt;strong>analyzers&lt;/strong> while for the keyword analysis there is a thing called a &lt;strong>normalizer&lt;/strong>. In this article I&amp;rsquo;ll explain what the normalizer is and show it&amp;rsquo;s use case for &lt;strong>normalizing&lt;/strong> URLs.&lt;/p>
+&lt;h2 id="tldr">TL;DR&lt;/h2>
+&lt;p>A neat use case for keyword normalizers is to extract a specific part of the URL with a char_filter of the &lt;code>pattern_replace&lt;/code> type.&lt;/p>
+&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>In Elasticsearch the textual data is represented with two data types: &lt;code>text&lt;/code> and &lt;code>keyword&lt;/code>. The &lt;code>text&lt;/code> type is meant to be used for full-text search use cases while &lt;code>keyword&lt;/code> is mean for filtering, sorting, and aggregation.&lt;/p>
+&lt;h3 id="tldr-about-analyzers">TL;DR About Analyzers&lt;/h3>
+&lt;p>To make a better use of &lt;code>text&lt;/code> data you can setup the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer-anatomy.html" target="_blank" rel="noopener">analyzer&lt;/a> which is a combination of three components:&lt;/p>
+&lt;ul>
+&lt;li>exactly one &lt;strong>tokenizer&lt;/strong>,&lt;/li>
+&lt;li>zero or more &lt;strong>character filters&lt;/strong>,&lt;/li>
+&lt;li>zero or more &lt;strong>token filters&lt;/strong>.&lt;/li>
+&lt;/ul>
+&lt;p>Basically, an analyzer transforms a single &lt;em>string&lt;/em> into &lt;em>words&lt;/em>, e.g. &lt;code>&amp;quot;This is my text&amp;quot;&lt;/code> can be transformed into &lt;code>[&amp;quot;this&amp;quot;, &amp;quot;my&amp;quot;, &amp;quot;text&amp;quot;]&lt;/code> which you can read as:&lt;/p>
+&lt;ul>
+&lt;li>text is split into tokens by tokenizer,&lt;/li>
+&lt;li>each token is lowercased with the a token filter,&lt;/li>
+&lt;li>stopwords are removed with another token filter.&lt;/li>
+&lt;/ul>
+&lt;h3 id="normalizers">Normalizers&lt;/h3>
+&lt;p>The
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-normalizers.html" target="_blank" rel="noopener">documentation&lt;/a> says that:&lt;/p>
+&lt;blockquote>
+&lt;p>Normalizers are similar to analyzers except that they may only emit a single token.&lt;/p>
+&lt;/blockquote>
+&lt;p>Normalizers can only be applied to the &lt;code>keyword&lt;/code> datatype. The cannonical use case is to lowercase structured content such as IDs, email addresses, e.g. a database stores emails in whatever case but searching for emails should be case insensitive. Note that only a subset of available filters can be used by a normalizer: all filters must work on a &lt;strong>per-character basis&lt;/strong>, i.e. no stopwords or stemmers.&lt;/p>
+&lt;h3 id="normalizers-for-normalizing-url-data">Normalizers for Normalizing URL Data&lt;/h3>
+&lt;p>Storing a URL in a &lt;code>keyword&lt;/code> field allows to filter, sort, and aggregate your data per URL. But what if you need to filter, sort, and aggregate by just one part of the URL and you have little to no control over the upstream data source? You have a couple of options:&lt;/p>
+&lt;ul>
+&lt;li>convince upstream to extract that one part in their code and send it to you,&lt;/li>
+&lt;li>setup a &lt;code>text&lt;/code> field with an analyzer that produces just that one token and enable field data (not a default setup and can get expensive).&lt;/li>
+&lt;li>setup a &lt;code>keyword&lt;/code> field with a normalizer with a &lt;code>char_filter&lt;/code>.&lt;/li>
+&lt;li>give up.&lt;/li>
+&lt;/ul>
+&lt;p>I want to explore the &lt;code>keyword&lt;/code> option. In the next section I&amp;rsquo;ll show how to setup normalizers for Elasticsearch URLs.&lt;/p>
+&lt;h3 id="the-not-so-synthetic-problem">The not so Synthetic Problem&lt;/h3>
+&lt;p>We have a list URLs without a hostname that were used to query Elasticsearch, e.g.: &lt;code>/my_search_index/_search?q=elasticsearch&lt;/code> and we need to split URLs into parts such as: index, operation endpoint, e.g.: &lt;code>_search&lt;/code> or &lt;code>_count&lt;/code>, query filters, etc. In the following example I&amp;rsquo;ll focus on the extracting the index part of the URL.&lt;/p>
+&lt;p>Let&amp;rsquo;s create an index:&lt;/p>
+&lt;pre>&lt;code>PUT elasticsearch_url_index
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;index&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;normalizer&amp;quot;: {
+&amp;quot;index_extractor_normalizer&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;custom&amp;quot;,
+&amp;quot;char_filter&amp;quot;: [
+&amp;quot;index_name_extractor&amp;quot;
+]
+}
+},
+&amp;quot;char_filter&amp;quot;: {
+&amp;quot;index_name_extractor&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;pattern_replace&amp;quot;,
+&amp;quot;pattern&amp;quot;: &amp;quot;/(.+)/.*&amp;quot;,
+&amp;quot;replacement&amp;quot;: &amp;quot;$1&amp;quot;
+}
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot; : {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;url&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;index&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;normalizer&amp;quot;: &amp;quot;index_extractor_normalizer&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Here we setup the index with a normalizer &lt;code>index_extractor_normalizer&lt;/code> that has a char filter &lt;code>index_name_extractor&lt;/code> that uses a regex &lt;code>pattern_replace&lt;/code> to extract characters between the first and the second slashes. The mappings have a property &lt;code>url&lt;/code> which is of the &lt;code>keyword&lt;/code> type and have a field &lt;code>index&lt;/code> which is also of the &lt;code>keyword&lt;/code> type and is set up to use the normalizer &lt;code>index_extractor_normalizer&lt;/code>.&lt;/p>
+&lt;p>Since the normalizer is basically a collection of filters we can use our good old friend &lt;code>_analyze&lt;/code> API to test how it works.&lt;/p>
+&lt;pre>&lt;code>POST elasticsearch_url_index/_analyze
+{
+&amp;quot;char_filter&amp;quot;: [&amp;quot;index_name_extractor&amp;quot;],
+&amp;quot;text&amp;quot;: [&amp;quot;/my_search_index/_search?q=elasticsearch&amp;quot;]
+}
+&lt;/code>&lt;/pre>
+&lt;p>Produces:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;tokens&amp;quot; : [
+{
+&amp;quot;token&amp;quot; : &amp;quot;my_search_index&amp;quot;,
+&amp;quot;start_offset&amp;quot; : 0,
+&amp;quot;end_offset&amp;quot; : 40,
+&amp;quot;type&amp;quot; : &amp;quot;word&amp;quot;,
+&amp;quot;position&amp;quot; : 0
+}
+]
+}
+&lt;/code>&lt;/pre>
+&lt;p>Good, exactly as we wanted: &lt;code>/my_search_index/_search?q=elasticsearch&lt;/code> =&amp;gt; &lt;code>my_search_index&lt;/code>.&lt;/p>
+&lt;p>Let&amp;rsquo;s index some data:&lt;/p>
+&lt;pre>&lt;code>PUT elasticsearch_url_index/_doc/0
+{
+&amp;quot;url&amp;quot;: &amp;quot;/my_search_index/_search?q=elasticsearch&amp;quot;
+}
+&lt;/code>&lt;/pre>
+&lt;p>Let&amp;rsquo;s try to filter URLs by the index name:&lt;/p>
+&lt;pre>&lt;code>GET elasticsearch_url_index/_search?q=url:my_search_index
+&lt;/code>&lt;/pre>
+&lt;p>Produces:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 0,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 0,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : null,
+&amp;quot;hits&amp;quot; : [ ]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>No results? What? Oh! Wrong field: &lt;code>url&lt;/code> was used instead of &lt;code>url.index&lt;/code>. Let&amp;rsquo;s try once again:&lt;/p>
+&lt;pre>&lt;code>GET elasticsearch_url_index/_search?q=url.index:my_search_index
+&lt;/code>&lt;/pre>
+&lt;p>Produces:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 0.2876821,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;elasticsearch_url_index&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;0&amp;quot;,
+&amp;quot;_score&amp;quot; : 0.2876821,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;url&amp;quot; : &amp;quot;/my_search_index/_search?q=elasticsearch&amp;quot;
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>As expected. Cool.&lt;/p>
+&lt;h3 id="bonus-a-trick-with-the-docvalue_fields">Bonus: a Trick with the &lt;code>docvalue_fields&lt;/code>&lt;/h3>
+&lt;p>Another neat trick is that we can get out the &lt;code>index&lt;/code> part of the URL from an Elasticsearch index using the &lt;code>docvalue_fields&lt;/code> option in a request ,e.g.:&lt;/p>
+&lt;pre>&lt;code>GET elasticsearch_url_index/_search?q=url.index:my_search_index
+{
+&amp;quot;docvalue_fields&amp;quot;: [&amp;quot;url.index&amp;quot;]
+}
+&lt;/code>&lt;/pre>
+&lt;p>Produces:&lt;/p>
+&lt;pre>&lt;code>{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 0.2876821,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;elasticsearch_url_index&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;0&amp;quot;,
+&amp;quot;_score&amp;quot; : 0.2876821,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;url&amp;quot; : &amp;quot;/my_search_index/_search?q=elasticsearch&amp;quot;
+},
+&amp;quot;fields&amp;quot; : {
+&amp;quot;url.index&amp;quot; : [
+&amp;quot;my_search_index&amp;quot;
+]
+}
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>The important part is this one:&lt;/p>
+&lt;pre>&lt;code>&amp;quot;fields&amp;quot; : {
+&amp;quot;url.index&amp;quot; : [
+&amp;quot;my_search_index&amp;quot;
+]
+}
+&lt;/code>&lt;/pre>
+&lt;p>A neat thing about the &lt;code>docvalue_fields&lt;/code> is that in the example above the &lt;code>my_search_index&lt;/code> value is not comming from the &lt;code>_source&lt;/code> of the document. This means that we can use &lt;code>keywords&lt;/code> and by extension normalized &lt;code>keywords&lt;/code> to fetch an exact value from the Elasticsearch index and not necessarily the one that was sent to Elasticsearch which somewhat solves our dependency from the upstream systems.&lt;/p>
+&lt;h2 id="notes">Notes&lt;/h2>
+&lt;p>The setup is done in the Kibana Dev Tools with the Elasticsearch 7.7.0.&lt;/p>
+&lt;p>The pattern &lt;code>&amp;quot;/(.+)/.*&amp;quot;&lt;/code> is a bit simplified purely for presentation purposes and doesn&amp;rsquo;t work as expected for URLs with more than 2 slashes, e.g.: &lt;code>/index/type/_search&lt;/code> would produce &lt;code>index/type&lt;/code>. You need something a bit more involved like &lt;code>&amp;quot;/([^/]+)/.*&amp;quot;&lt;/code>.&lt;/p>
+&lt;h2 id="fin">Fin&lt;/h2>
+&lt;p>That is all I wanted to show you today. Hope it might be useful/interesting to someone down the line. Leave comments on the Github issue
+&lt;a href="https://github.com/dainiusjocas/blog/issues/7" target="_blank" rel="noopener">here&lt;/a>. Cheers!&lt;/p></description></item><item><title>Deploy babashka script to AWS Lambda</title><link>https://www.jocas.lt/blog/post/babashka-aws-lambda/</link><pubDate>Sat, 21 Mar 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/babashka-aws-lambda/</guid><description>&lt;p>TL;DR&lt;/p>
+&lt;p>I&amp;rsquo;ve managed to package a simple
+&lt;a href="https://github.com/borkdude/babashka" target="_blank" rel="noopener">babashka&lt;/a> script to an AWS Lambda Custom Runtime.
+&lt;a href="https://github.com/dainiusjocas/babashka-lambda" target="_blank" rel="noopener">Here&lt;/a> is the code, try for yourself.&lt;/p>
 &lt;h2 id="motivation">Motivation&lt;/h2>
-&lt;p>Wouldn't it be great to deploy little Clojure code snippets to Custom Lambda Runtime? The main benefits would be:&lt;/p>
+&lt;p>Wouldn&amp;rsquo;t it be great to deploy little Clojure code snippets to Custom Lambda Runtime? The main benefits would be:&lt;/p>
 &lt;ul>
 &lt;li>you would not suffer from java cold-start problems;&lt;/li>
-&lt;li>you wouldn't need to compile your project with GraalVM &lt;code>native-image&lt;/code> tool which is time consuming and for anything more advanced is not likely to work anyway;&lt;/li>
+&lt;li>you wouldn&amp;rsquo;t need to compile your project with GraalVM &lt;code>native-image&lt;/code> tool which is time consuming and for anything more advanced is not likely to work anyway;&lt;/li>
 &lt;li>babashka supports scripting with a subset of Clojure, which might do the work for you.&lt;/li>
 &lt;/ul>
 &lt;h2 id="the-plan">The plan&lt;/h2>
-&lt;p>I know what it takes to deploy to Lambda Custom Runtime. Last year I've created a Clojure project template for deploying &lt;a href="https://github.com/tokenmill/clojure-graalvm-aws-lambda-template">GraalVM compiled AWS Lambda Custom Runtime&lt;/a>. And babashka is just another self contained binary. It should be too hard to bring two things together and get it working? Challenge accepted.&lt;/p>
+&lt;p>I know what it takes to deploy to Lambda Custom Runtime. Last year I&amp;rsquo;ve created a Clojure project template for deploying
+&lt;a href="https://github.com/tokenmill/clojure-graalvm-aws-lambda-template" target="_blank" rel="noopener">GraalVM compiled AWS Lambda Custom Runtime&lt;/a>. And babashka is just another self contained binary. It should be too hard to bring two things together and get it working? Challenge accepted.&lt;/p>
 &lt;h2 id="packaging">Packaging&lt;/h2>
-&lt;p>I like to build software inside Docker containers. In this experiment, for the first attempt I've used this Dockerfile:&lt;/p>
+&lt;p>I like to build software inside Docker containers. In this experiment, for the first attempt I&amp;rsquo;ve used this Dockerfile:&lt;/p>
 &lt;pre>&lt;code>FROM borkdude/babashka:latest as BABASHKA
 FROM clojure:tools-deps-alpine as BUILDER
 RUN apk add --no-cache zip
@@ -27,13 +246,14 @@ RUN zip -q -r function.zip bb cp bootstrap .gitlibs/ .m2/ src/ resources/ deps.e
 &lt;p>Here:&lt;/p>
 &lt;ul>
 &lt;li>copy &lt;code>bb&lt;/code> binary from babashka Docker image,&lt;/li>
-&lt;li>download the dependencies for babashka script using &lt;code>clojure&lt;/code> (both, maven and git dependencies are supported, like is described &lt;a href="https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/">here&lt;/a>),&lt;/li>
+&lt;li>download the dependencies for babashka script using &lt;code>clojure&lt;/code> (both, maven and git dependencies are supported, like is described
+&lt;a href="https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/" target="_blank" rel="noopener">here&lt;/a>),&lt;/li>
 &lt;li>write a classpath to the &lt;code>cp&lt;/code> file,&lt;/li>
 &lt;li>copy all source code,&lt;/li>
 &lt;li>zip the required contents to the &lt;code>function.zip&lt;/code>.&lt;/li>
 &lt;/ul>
-&lt;p>Every line of this dockerfile is packed with details but I'll leave it for the future posts.&lt;/p>
-&lt;p>I've packaged all dependencies for lambda into &lt;code>function.zip&lt;/code>. The contents of the archive are:&lt;/p>
+&lt;p>Every line of this dockerfile is packed with details but I&amp;rsquo;ll leave it for the future posts.&lt;/p>
+&lt;p>I&amp;rsquo;ve packaged all dependencies for lambda into &lt;code>function.zip&lt;/code>. The contents of the archive are:&lt;/p>
 &lt;ul>
 &lt;li>&lt;code>bb&lt;/code>: babashka binary&lt;/li>
 &lt;li>&lt;code>bootstrap&lt;/code>: AWS Lambda entry point script&lt;/li>
@@ -45,7 +265,8 @@ RUN zip -q -r function.zip bb cp bootstrap .gitlibs/ .m2/ src/ resources/ deps.e
 &lt;li>&lt;code>src&lt;/code>: directory with babashka scripts&lt;/li>
 &lt;/ul>
 &lt;h2 id="custom-runtime-discoveries">Custom runtime discoveries&lt;/h2>
-&lt;p>Finally, having all dependencies packaged up, I've deployed the &lt;code>function.zip&lt;/code> to AWS Lambda. The first error message was not very &lt;a href="https://gist.github.com/dainiusjocas/feafeef5653ff2c6e8c7b2d9627a831d">encouraging&lt;/a>:&lt;/p>
+&lt;p>Finally, having all dependencies packaged up, I&amp;rsquo;ve deployed the &lt;code>function.zip&lt;/code> to AWS Lambda. The first error message was not very
+&lt;a href="https://gist.github.com/dainiusjocas/feafeef5653ff2c6e8c7b2d9627a831d" target="_blank" rel="noopener">encouraging&lt;/a>:&lt;/p>
 &lt;pre>&lt;code class="language-text">Util_sun_misc_Signal.ensureInitialized: CSunMiscSignal.create() failed. errno: 38 Function not implemented
 Fatal error: Util_sun_misc_Signal.ensureInitialized: CSunMiscSignal.open() failed.
 JavaFrameAnchor dump:
@@ -224,7 +445,10 @@ RequestId: 263ff1be-425d-4dcb-9ea5-67020dc3041b Error: Runtime exited with error
 Runtime.ExitError
 &lt;/code>&lt;/pre>
 &lt;h2 id="the-fight">The fight&lt;/h2>
-&lt;p>After some Googling I've discovered several related clues &lt;a href="https://github.com/oracle/graal/issues/841">here&lt;/a> and &lt;a href="https://github.com/quarkusio/quarkus/issues/4262">here&lt;/a>. They say that signals are not supported in AWS lambda. So, why not to disable signals for babashka and see what happens? I've forked the repo, made a flag that disables PIPE signal handling, deployed babashka to the &lt;a href="https://hub.docker.com/r/dainiusjocas/babashka">docker hub&lt;/a> and tried to deploy lambda once again.&lt;/p>
+&lt;p>After some Googling I&amp;rsquo;ve discovered several related clues
+&lt;a href="https://github.com/oracle/graal/issues/841" target="_blank" rel="noopener">here&lt;/a> and
+&lt;a href="https://github.com/quarkusio/quarkus/issues/4262" target="_blank" rel="noopener">here&lt;/a>. They say that signals are not supported in AWS lambda. So, why not to disable signals for babashka and see what happens? I&amp;rsquo;ve forked the repo, made a flag that disables PIPE signal handling, deployed babashka to the
+&lt;a href="https://hub.docker.com/r/dainiusjocas/babashka" target="_blank" rel="noopener">docker hub&lt;/a> and tried to deploy lambda once again.&lt;/p>
 &lt;p>And? It worked:&lt;/p>
 &lt;pre>&lt;code class="language-shell">make function-name=$(make get-function-name) invoke-function
 =&amp;gt;
@@ -234,12 +458,14 @@ Runtime.ExitError
 }
 &lt;/code>&lt;/pre>
 &lt;h2 id="summary">Summary&lt;/h2>
-&lt;p>&lt;a href="https://github.com/dainiusjocas/babashka-lambda">Here&lt;/a> is the example of babashka script that can be deployed to AWS Lambda.&lt;/p>
+&lt;p>
+&lt;a href="https://github.com/dainiusjocas/babashka-lambda" target="_blank" rel="noopener">Here&lt;/a> is the example of babashka script that can be deployed to AWS Lambda.&lt;/p>
 &lt;ul>
 &lt;li>The &lt;code>function.zip&lt;/code> weights just 18MB.&lt;/li>
 &lt;li>The cold startup of the Lambda that is given 128MB of RAM is ~400ms. Subsequent calls ranges from 4ms and 120ms. The more RAM you give the faster lambda gets.&lt;/li>
 &lt;li>I can develop the code in Cursive as the structure is like of an ordinary Clojure deps.edn project (and it can be used on the JVM).&lt;/li>
-&lt;li>I made a &lt;a href="https://github.com/borkdude/babashka/pull/305">PR to babashka&lt;/a> and I've got accepted.&lt;/li>
+&lt;li>I made a
+&lt;a href="https://github.com/borkdude/babashka/pull/305" target="_blank" rel="noopener">PR to babashka&lt;/a> and I&amp;rsquo;ve got accepted.&lt;/li>
 &lt;/ul>
 &lt;h2 id="next-steps">Next Steps&lt;/h2>
 &lt;ul>
@@ -247,9 +473,11 @@ Runtime.ExitError
 &lt;li>Get rid of AWS CloudFormation part.&lt;/li>
 &lt;li>Work a bit more to support AWS API Gateway.&lt;/li>
 &lt;li>Create a template for such projects.&lt;/li>
-&lt;/ul></description></item><item><title>Using Search Templates in Elasticsearch</title><link>https://www.jocas.lt/blog/post/on-search-templates/</link><pubDate>Mon, 23 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/on-search-templates/</guid><description>&lt;p>I want to take a look at &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html">Search Templates&lt;/a> for Elasticsearch. Let's apply them to examples from &lt;a href="https://www.jocas.lt/blog/post/synonym-graph-phrase-search/">previous post on Synonym Graphs&lt;/a>.&lt;/p>
+&lt;/ul></description></item><item><title>Using Search Templates in Elasticsearch</title><link>https://www.jocas.lt/blog/post/on-search-templates/</link><pubDate>Mon, 23 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/on-search-templates/</guid><description>&lt;p>I want to take a look at
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html" target="_blank" rel="noopener">Search Templates&lt;/a> for Elasticsearch. Let&amp;rsquo;s apply them to examples from
+&lt;a href="https://www.jocas.lt/blog/post/synonym-graph-phrase-search/" target="_blank" rel="noopener">previous post on Synonym Graphs&lt;/a>.&lt;/p>
 &lt;h2 id="setup">Setup&lt;/h2>
-&lt;p>I'm using Elasticsearch 7.5.1.&lt;/p>
+&lt;p>I&amp;rsquo;m using Elasticsearch 7.5.1.&lt;/p>
 &lt;p>Index configuration:&lt;/p>
 &lt;pre>&lt;code>DELETE test_index-1
 PUT /test_index-1
@@ -321,7 +549,7 @@ PUT /test_index-1
 &lt;li>&lt;code>prefix very important thing suffix&lt;/code>&lt;/li>
 &lt;/ul>
 &lt;h2 id="templates">Templates&lt;/h2>
-&lt;p>I'm very interested in one particular use of the search templates: how flexible is the management of stored seach templates? Can I update a search template while receiving queries?&lt;/p>
+&lt;p>I&amp;rsquo;m very interested in one particular use of the search templates: how flexible is the management of stored seach templates? Can I update a search template while receiving queries?&lt;/p>
 &lt;p>Add a template:&lt;/p>
 &lt;pre>&lt;code>POST _scripts/synonym-graph-search
 {
@@ -381,9 +609,9 @@ PUT /test_index-1
 }
 &lt;/code>&lt;/pre>
 &lt;p>Exactly as expected.&lt;/p>
-&lt;p>When using a stored search template the Elasticsearch client doesn't need to handle the complex query construction.&lt;/p>
+&lt;p>When using a stored search template the Elasticsearch client doesn&amp;rsquo;t need to handle the complex query construction.&lt;/p>
 &lt;h2 id="templates-are-updateable">Templates are updateable&lt;/h2>
-&lt;p>Let's try to update the template with a higher boost value:&lt;/p>
+&lt;p>Let&amp;rsquo;s try to update the template with a higher boost value:&lt;/p>
 &lt;pre>&lt;code>POST _scripts/synonym-graph-search
 {
 &amp;quot;script&amp;quot;: {
@@ -402,7 +630,7 @@ PUT /test_index-1
 }
 &lt;/code>&lt;/pre>
 &lt;p>Works.&lt;/p>
-&lt;p>Now let's run the same query:&lt;/p>
+&lt;p>Now let&amp;rsquo;s run the same query:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search/template
 {
 &amp;quot;id&amp;quot;: &amp;quot;synonym-graph-search&amp;quot;,
@@ -517,7 +745,7 @@ PUT /test_index-1
 &lt;/code>&lt;/pre>
 &lt;p>Instead of profiding one value we can replace it with a list. Good!&lt;/p>
 &lt;h2 id="metadata-of-the-search-template">Metadata of the search template&lt;/h2>
-&lt;p>It would be great to be able to store some metadata with the search template script, e.g. Git commit SHA of the query. I couldn't find a way to do this. A workaround might be to &lt;code>_name&lt;/code> attribute of the query. E.g.:&lt;/p>
+&lt;p>It would be great to be able to store some metadata with the search template script, e.g. Git commit SHA of the query. I couldn&amp;rsquo;t find a way to do this. A workaround might be to &lt;code>_name&lt;/code> attribute of the query. E.g.:&lt;/p>
 &lt;pre>&lt;code>POST _scripts/synonym-graph-search
 {
 &amp;quot;script&amp;quot;: {
@@ -573,14 +801,17 @@ PUT /test_index-1
 &lt;p>Not great but might be useful.&lt;/p>
 &lt;h2 id="discussion">Discussion&lt;/h2>
 &lt;ul>
-&lt;li>Templates doesn't support search index specification.&lt;/li>
+&lt;li>Templates doesn&amp;rsquo;t support search index specification.&lt;/li>
 &lt;li>Field names can be parameterized, this feature alows to start/stop using a new/old field.&lt;/li>
 &lt;li>Search template can be tested in (even in production cluster) independently.&lt;/li>
-&lt;li>We can run our query against &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-search-template.html">multiple search templates&lt;/a>. Combine this with the Profile API and performance can be compared. Explain API also is supported.&lt;/li>
-&lt;/ul></description></item><item><title>Phrase Search with Synonym Graph Token Filter in Elasticsearch</title><link>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</link><pubDate>Sun, 22 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</guid><description>&lt;p>I've &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">written&lt;/a> that if you google for &lt;code>How can you match a long query text to a short text field?&lt;/code> you're advised to use Elasticsearch Percolator. Today I'll show an alternative way of solving the same problem with Elasticsearch.&lt;/p>
-&lt;p>The main idea is to use &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/analysis-synonym-graph-tokenfilter.html">Synonym Graph Token Filter&lt;/a> with some data preparation.&lt;/p>
+&lt;li>We can run our query against
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-search-template.html" target="_blank" rel="noopener">multiple search templates&lt;/a>. Combine this with the Profile API and performance can be compared. Explain API also is supported.&lt;/li>
+&lt;/ul></description></item><item><title>Phrase Search with Synonym Graph Token Filter in Elasticsearch</title><link>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</link><pubDate>Sun, 22 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</guid><description>&lt;p>I&amp;rsquo;ve
+&lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/" target="_blank" rel="noopener">written&lt;/a> that if you google for &lt;code>How can you match a long query text to a short text field?&lt;/code> you&amp;rsquo;re advised to use Elasticsearch Percolator. Today I&amp;rsquo;ll show an alternative way of solving the same problem with Elasticsearch.&lt;/p>
+&lt;p>The main idea is to use
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/analysis-synonym-graph-tokenfilter.html" target="_blank" rel="noopener">Synonym Graph Token Filter&lt;/a> with some data preparation.&lt;/p>
 &lt;h2 id="problem-statement">Problem Statement&lt;/h2>
-&lt;p>Say that we learned how extract some entity from free form text with techniques such as NER, dictionary annotations, or some fancy Machine Learning. And when this entity is mentioned in the search query we want to boost documents that mention this entity. Also, say you've ruled out using Elasticsearch Percolator because it increases network latency because it requires additional call to Elasticsearch.&lt;/p>
+&lt;p>Say that we learned how extract some entity from free form text with techniques such as NER, dictionary annotations, or some fancy Machine Learning. And when this entity is mentioned in the search query we want to boost documents that mention this entity. Also, say you&amp;rsquo;ve ruled out using Elasticsearch Percolator because it increases network latency because it requires additional call to Elasticsearch.&lt;/p>
 &lt;p>For further discussion our unstructured text is going to be &lt;code>This description is about a Very Important Thing and something else.&lt;/code> and the extracted entity &lt;code>Very Important Thing&lt;/code>. Our test document looks like :&lt;/p>
 &lt;pre>&lt;code class="language-json">{
 &amp;quot;description&amp;quot;: &amp;quot;This description is about a Very Important Thing and something else.&amp;quot;,
@@ -595,7 +826,7 @@ PUT /test_index-1
 &lt;/ul>
 &lt;p>All examples are tested on Elasticsearch 7.5.1.&lt;/p>
 &lt;h3 id="naive-setup">Naive Setup&lt;/h3>
-&lt;p>Let's create an index for our documents:&lt;/p>
+&lt;p>Let&amp;rsquo;s create an index for our documents:&lt;/p>
 &lt;pre>&lt;code>PUT /test_index-2
 {
 &amp;quot;mappings&amp;quot;: {
@@ -610,7 +841,7 @@ PUT /test_index-1
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Entity field is of type &lt;code>text&lt;/code> because we want it to be searchable. &lt;code>keyword&lt;/code> type won't work because it does only exact matches and out query most likely will be longer than our entity string.&lt;/p>
+&lt;p>Entity field is of type &lt;code>text&lt;/code> because we want it to be searchable. &lt;code>keyword&lt;/code> type won&amp;rsquo;t work because it does only exact matches and out query most likely will be longer than our entity string.&lt;/p>
 &lt;p>Index our document:&lt;/p>
 &lt;pre>&lt;code>PUT test_index-2/_doc/1
 {
@@ -663,7 +894,7 @@ PUT /test_index-1
 }
 &lt;/code>&lt;/pre>
 &lt;p>Cool, we found what we we looking for.&lt;/p>
-&lt;p>Let's try another query, this time with a mention of &lt;code>very important another thing&lt;/code>:&lt;/p>
+&lt;p>Let&amp;rsquo;s try another query, this time with a mention of &lt;code>very important another thing&lt;/code>:&lt;/p>
 &lt;pre>&lt;code>GET test_index-2/_search
 {
 &amp;quot;query&amp;quot;: {
@@ -708,7 +939,7 @@ PUT /test_index-1
 }
 &lt;/code>&lt;/pre>
 &lt;p>Oh, the results are the same as with the previous query despite the fact that we mention &lt;code>Another Thing&lt;/code> here. But it still might be OK because we matched all the terms of the entity.&lt;/p>
-&lt;p>Let's try another query:&lt;/p>
+&lt;p>Let&amp;rsquo;s try another query:&lt;/p>
 &lt;pre>&lt;code>GET test_index-2/_search
 {
 &amp;quot;query&amp;quot;: {
@@ -754,7 +985,7 @@ PUT /test_index-1
 &lt;/code>&lt;/pre>
 &lt;p>Oh no, we still matched our &lt;code>Very Important Thing&lt;/code> while only &lt;code>thing&lt;/code> term is present in the query. But at least this time the score is lower than with previous twoqueries, 0.5753642 vs. 1.7260926. Here we clearly see the problem: we are matching short strings with long strings and partial matches raises problems.&lt;/p>
 &lt;h2 id="proposed-solution">Proposed Solution&lt;/h2>
-&lt;p>Let's leverage Synonym Graph Token Filter to solve our problem.&lt;/p>
+&lt;p>Let&amp;rsquo;s leverage Synonym Graph Token Filter to solve our problem.&lt;/p>
 &lt;pre>&lt;code>PUT /test_index-1
 {
 &amp;quot;mappings&amp;quot;: {
@@ -812,7 +1043,7 @@ PUT /test_index-1
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Let's decompose this large index configuration piece by piece:&lt;/p>
+&lt;p>Let&amp;rsquo;s decompose this large index configuration piece by piece:&lt;/p>
 &lt;ol>
 &lt;li>The &lt;code>entity&lt;/code> attribute now has separate analyzers for both index and search phases.&lt;/li>
 &lt;li>The &lt;code>lowercase_keyword_analyzer&lt;/code> uses keyword tokenizer which means that tokenization will result in the sequence of token of size 1, then it normalizes tokens by lowercasing them and finally &lt;code>spaces_to_undescores_filter&lt;/code>, replaces spaces to underscores. E.g. a string &lt;code>&amp;quot;Very Important Thing&amp;quot;&lt;/code> is transformed into list of tokens &lt;code>[&amp;quot;very_important_thing&amp;quot;]&lt;/code>. Or use out friend &lt;code>_analyze&lt;/code> API:&lt;/li>
@@ -837,7 +1068,7 @@ PUT /test_index-1
 }
 &lt;/code>&lt;/pre>
 &lt;ol start="3">
-&lt;li>The &lt;code>synonym_graph_analyzer&lt;/code> use standard tokenizer, which is followed by the &lt;code>lowercase&lt;/code> filter, and then the &lt;code>my_synonym_graph&lt;/code> token filter is applied. We've set up one synonym &lt;code>&amp;quot;very important thing =&amp;gt; very_important_thing&amp;quot;&lt;/code>. E.g.&lt;/li>
+&lt;li>The &lt;code>synonym_graph_analyzer&lt;/code> use standard tokenizer, which is followed by the &lt;code>lowercase&lt;/code> filter, and then the &lt;code>my_synonym_graph&lt;/code> token filter is applied. We&amp;rsquo;ve set up one synonym &lt;code>&amp;quot;very important thing =&amp;gt; very_important_thing&amp;quot;&lt;/code>. E.g.&lt;/li>
 &lt;/ol>
 &lt;pre>&lt;code>POST test_index-1/_analyze
 {
@@ -872,7 +1103,7 @@ PUT /test_index-1
 ]
 }
 &lt;/code>&lt;/pre>
-&lt;p>After analysis we have 3 tokens &lt;code>[&amp;quot;prefix&amp;quot;, &amp;quot;very_important_thing&amp;quot;, &amp;quot;suffix&amp;quot;]&lt;/code>. Notice &lt;code>&amp;quot;very_important_thing&amp;quot;&lt;/code> token: this is equal to the right-hand-side from our synonym definitions. Now let's run queries from the previous section:&lt;/p>
+&lt;p>After analysis we have 3 tokens &lt;code>[&amp;quot;prefix&amp;quot;, &amp;quot;very_important_thing&amp;quot;, &amp;quot;suffix&amp;quot;]&lt;/code>. Notice &lt;code>&amp;quot;very_important_thing&amp;quot;&lt;/code> token: this is equal to the right-hand-side from our synonym definitions. Now let&amp;rsquo;s run queries from the previous section:&lt;/p>
 &lt;pre>&lt;code>GET test_index-1/_search
 {
 &amp;quot;query&amp;quot;: {
@@ -984,7 +1215,7 @@ PUT /test_index-1
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>No hits! Good. This means that also substring doesn't match.&lt;/p>
+&lt;p>No hits! Good. This means that also substring doesn&amp;rsquo;t match.&lt;/p>
 &lt;h2 id="discussion">Discussion&lt;/h2>
 &lt;p>Synonym Graph Token Filter can &amp;ldquo;replace&amp;rdquo; a sequence of tokens (e.g. a phrase) with another sequence of tokens. In this particular example: many tokens were replaced with one token.&lt;/p>
 &lt;ol>
@@ -993,7 +1224,8 @@ PUT /test_index-1
 &lt;li>Management of the synonym list might complicate index management, e.g. you use templates for your index management.&lt;/li>
 &lt;li>The overal solution in general might look a bit too complicated.&lt;/li>
 &lt;/ol></description></item><item><title>Elasticsearch Percolator and Text Analyzers</title><link>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</guid><description>&lt;p>This time I need to percolate texts with different analyzers for index and search analyzers.&lt;/p>
-&lt;p>Let's elaborate a bit on &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">previous article&lt;/a> and explicitly declare analyzers to use.&lt;/p>
+&lt;p>Let&amp;rsquo;s elaborate a bit on
+&lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/" target="_blank" rel="noopener">previous article&lt;/a> and explicitly declare analyzers to use.&lt;/p>
 &lt;p>Define index:&lt;/p>
 &lt;pre>&lt;code>PUT /my-index
 {
@@ -1035,7 +1267,7 @@ PUT /my-index/_doc/2?refresh
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Let's percolate:&lt;/p>
+&lt;p>Let&amp;rsquo;s percolate:&lt;/p>
 &lt;pre>&lt;code>GET /my-index/_search?
 {
 &amp;quot;query&amp;quot;: {
@@ -1212,7 +1444,7 @@ GET /my-index/_search?
 &lt;/code>&lt;/pre>
 &lt;p>As expected: only 1 percolator query matched our input.&lt;/p>
 &lt;h2 id="phrases-with-stopwords">Phrases with Stopwords&lt;/h2>
-&lt;p>Say, we have a phrase &lt;code>&amp;quot;bonsai is tree&amp;quot;&lt;/code> and we percolate text &lt;code>A new bonsai in tree in the office&lt;/code> with the &lt;code>standard&lt;/code> analyzer for indexing and &lt;code>english&lt;/code> for search analyzer. There should be no matches. Let's try:&lt;/p>
+&lt;p>Say, we have a phrase &lt;code>&amp;quot;bonsai is tree&amp;quot;&lt;/code> and we percolate text &lt;code>A new bonsai in tree in the office&lt;/code> with the &lt;code>standard&lt;/code> analyzer for indexing and &lt;code>english&lt;/code> for search analyzer. There should be no matches. Let&amp;rsquo;s try:&lt;/p>
 &lt;pre>&lt;code>DELETE my-index
 PUT /my-index
 {
@@ -1302,7 +1534,8 @@ GET /my-index/_search?
 &lt;/code>&lt;/pre>
 &lt;p>We have a match! Also notice that the highlighter is broken!&lt;/p>
 &lt;p>The problem that these two analyzers have different stopword lists (no stopwords for &lt;code>standard&lt;/code> and several English stopwords for &lt;code>english&lt;/code> analyzer) and the phrase contains a stopword that is not shared between analyzers.&lt;/p>
-&lt;p>Let's fix this surprise with &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer.html#search-quote-analyzer">&lt;code>search_quote_analyzer&lt;/code>&lt;/a>.&lt;/p>
+&lt;p>Let&amp;rsquo;s fix this surprise with
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer.html#search-quote-analyzer" target="_blank" rel="noopener">&lt;code>search_quote_analyzer&lt;/code>&lt;/a>.&lt;/p>
 &lt;pre>&lt;code>DELETE my-index
 PUT /my-index
 {
@@ -1371,7 +1604,7 @@ GET /my-index/_search?
 }
 &lt;/code>&lt;/pre>
 &lt;p>No hits, as expected.&lt;/p>
-&lt;p>Let's check if the expected behaviour is still there:&lt;/p>
+&lt;p>Let&amp;rsquo;s check if the expected behaviour is still there:&lt;/p>
 &lt;pre>&lt;code>GET /my-index/_search?
 {
 &amp;quot;query&amp;quot;: {
@@ -1437,8 +1670,11 @@ GET /my-index/_search?
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Good. Even the highlighting works.&lt;/p></description></item><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the &lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field">Stack Overflow page&lt;/a> &lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3">or here&lt;/a> where the answer is to use &lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
-&lt;p>My search items are phrases meaning that it should match all terms in order. Let's create a sample setup in Kibana (v7.5) Dev dashboard.&lt;/p>
+&lt;p>Good. Even the highlighting works.&lt;/p></description></item><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the
+&lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field" target="_blank" rel="noopener">Stack Overflow page&lt;/a>
+&lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3" target="_blank" rel="noopener">or here&lt;/a> where the answer is to use
+&lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
+&lt;p>My search items are phrases meaning that it should match all terms in order. Let&amp;rsquo;s create a sample setup in Kibana (v7.5) Dev dashboard.&lt;/p>
 &lt;ol>
 &lt;li>Create an index for percolation:&lt;/li>
 &lt;/ol>
@@ -1457,7 +1693,8 @@ GET /my-index/_search?
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
+&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter" target="_blank" rel="noopener">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
 &lt;ol start="2">
 &lt;li>Store one phrase query:&lt;/li>
 &lt;/ol>
@@ -1615,7 +1852,8 @@ GET /my-index/_search?
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Now, take the email under the &lt;code>&amp;quot;subscriber_email&amp;quot;&lt;/code> from the response and send an email with the highlight.&lt;/p></description></item><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>&lt;p>I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I'm going to answer in this blog post is: how to build an uberjar for AWS Lambda with &lt;a href="https://github.com/tonsky/uberdeps">Uberdeps&lt;/a>?&lt;/p>
+&lt;p>Now, take the email under the &lt;code>&amp;quot;subscriber_email&amp;quot;&lt;/code> from the response and send an email with the highlight.&lt;/p></description></item><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>&lt;p>I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I&amp;rsquo;m going to answer in this blog post is: how to build an uberjar for AWS Lambda with
+&lt;a href="https://github.com/tonsky/uberdeps" target="_blank" rel="noopener">Uberdeps&lt;/a>?&lt;/p>
 &lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>Add an alias to the &lt;code>deps.edn&lt;/code> for uberjar building:&lt;/p>
 &lt;pre>&lt;code>{:aliases {:uberjar
@@ -1634,29 +1872,34 @@ mkdir classes &amp;amp;&amp;amp; \
 ./compile.clj &amp;amp;&amp;amp; \
 clojure -A:uberjar --target target/UBERJAR_NAME.jar)
 &lt;/code>&lt;/pre>
-&lt;p>I'd advise put that last script into a &lt;code>Makefile&lt;/code> ;)&lt;/p>
+&lt;p>I&amp;rsquo;d advise put that last script into a &lt;code>Makefile&lt;/code> ;)&lt;/p>
 &lt;hr>
 &lt;h2 id="introduction">Introduction&lt;/h2>
-&lt;p>To deploy your Clojure code to AWS Lambda you need to package it as an uberjar. If your project is managed with &lt;code>deps.edn&lt;/code>, basically you're on your own to find a suitable library to package your code.&lt;/p>
-&lt;p>For some time to build uberjars for &lt;code>deps.edn&lt;/code> projects I was using &lt;a href="https://github.com/luchiniatwork/cambada">Cambada&lt;/a>. It did the job but I was not entirely happy with the library for a couple of reasons:&lt;/p>
+&lt;p>To deploy your Clojure code to AWS Lambda you need to package it as an uberjar. If your project is managed with &lt;code>deps.edn&lt;/code>, basically you&amp;rsquo;re on your own to find a suitable library to package your code.&lt;/p>
+&lt;p>For some time to build uberjars for &lt;code>deps.edn&lt;/code> projects I was using
+&lt;a href="https://github.com/luchiniatwork/cambada" target="_blank" rel="noopener">Cambada&lt;/a>. It did the job but I was not entirely happy with the library for a couple of reasons:&lt;/p>
 &lt;ul>
 &lt;li>the library seems to be no longer maintained;&lt;/li>
-&lt;li>it has various &lt;a href="https://github.com/luchiniatwork/cambada/issues">bugs&lt;/a> with transitive Git dependencies. I've found out that these bugs are fixed in a &lt;a href="https://github.com/xfthhxk/cambada">fork&lt;/a> of the Cambada and I used it as a git dependency.&lt;/li>
+&lt;li>it has various
+&lt;a href="https://github.com/luchiniatwork/cambada/issues" target="_blank" rel="noopener">bugs&lt;/a> with transitive Git dependencies. I&amp;rsquo;ve found out that these bugs are fixed in a
+&lt;a href="https://github.com/xfthhxk/cambada" target="_blank" rel="noopener">fork&lt;/a> of the Cambada and I used it as a git dependency.&lt;/li>
 &lt;/ul>
 &lt;p>Because building an uberjar for &lt;code>deps.edn&lt;/code> boils down to just finding a library there is always temptation to try something new.&lt;/p>
 &lt;h2 id="enter-uberdeps">Enter Uberdeps&lt;/h2>
-&lt;p>For my toy project I wanted to try out &lt;a href="https://github.com/tonsky/uberdeps">Uberdeps&lt;/a>. The introduction &lt;a href="https://tonsky.me/blog/uberdeps/">blog post&lt;/a> got me interested and I really liked the main idea:&lt;/p>
+&lt;p>For my toy project I wanted to try out
+&lt;a href="https://github.com/tonsky/uberdeps" target="_blank" rel="noopener">Uberdeps&lt;/a>. The introduction
+&lt;a href="https://tonsky.me/blog/uberdeps/" target="_blank" rel="noopener">blog post&lt;/a> got me interested and I really liked the main idea:&lt;/p>
 &lt;blockquote>
 &lt;p>Takes deps.edn and packs an uberjar out of it.&lt;/p>
 &lt;/blockquote>
 &lt;p>Sounds like exactly what I need.&lt;/p>
 &lt;h2 id="trouble">Trouble&lt;/h2>
-&lt;p>I've written my application, added all the things needed to deploy it as an AWS Lambda, build an uberjar with Uberdeps, deployed the app with the AWS CloudFormation, but when I've invoked the Lambda I've received an error:&lt;/p>
+&lt;p>I&amp;rsquo;ve written my application, added all the things needed to deploy it as an AWS Lambda, build an uberjar with Uberdeps, deployed the app with the AWS CloudFormation, but when I&amp;rsquo;ve invoked the Lambda I&amp;rsquo;ve received an error:&lt;/p>
 &lt;pre>&lt;code>{
 &amp;quot;message&amp;quot; : &amp;quot;Internal server error&amp;quot;
 }
 &lt;/code>&lt;/pre>
-&lt;p>After searching through the AWS CloudWatch logs I've found:&lt;/p>
+&lt;p>After searching through the AWS CloudWatch logs I&amp;rsquo;ve found:&lt;/p>
 &lt;pre>&lt;code>Class not found: my.Lambda: java.lang.ClassNotFoundException
 java.lang.ClassNotFoundException: my.Lambda
 at java.net.URLClassLoader.findClass(URLClassLoader.java:382)
@@ -1666,15 +1909,18 @@ at java.lang.Class.forName0(Native Method)
 at java.lang.Class.forName(Class.java:348)
 &lt;/code>&lt;/pre>
 &lt;p>The &lt;code>my.Lambda&lt;/code> class was not found.&lt;/p>
-&lt;p>After taking a look at the contents of the uberjar I've noticed that the &lt;code>my.Lambda&lt;/code> class is indeed not inside the Uberjar. Ah, it seems that AOT (Ahead-of-Time) is not done out of the box. After searching and not finding a flag or some parameter that I need to pass to force the AOT compilation in the Uberdeps README, I've discovered an already closed &lt;a href="https://github.com/tonsky/uberdeps/pull/11">pull request&lt;/a>: the AOT compilation functionality is not implemented.&lt;/p>
+&lt;p>After taking a look at the contents of the uberjar I&amp;rsquo;ve noticed that the &lt;code>my.Lambda&lt;/code> class is indeed not inside the Uberjar. Ah, it seems that AOT (Ahead-of-Time) is not done out of the box. After searching and not finding a flag or some parameter that I need to pass to force the AOT compilation in the Uberdeps README, I&amp;rsquo;ve discovered an already closed
+&lt;a href="https://github.com/tonsky/uberdeps/pull/11" target="_blank" rel="noopener">pull request&lt;/a>: the AOT compilation functionality is not implemented.&lt;/p>
 &lt;p>I was in trouble.&lt;/p>
 &lt;h2 id="solution">Solution&lt;/h2>
 &lt;p>The solution was to manually perform AOT compilation of the relevant namespaces right before building an uberjar and then instruct Uberdeps to put the resulting class files into the uberjar.&lt;/p>
-&lt;p>To do AOT compilation I've written a Clojure script &lt;code>compile.clj&lt;/code>:&lt;/p>
+&lt;p>To do AOT compilation I&amp;rsquo;ve written a Clojure script &lt;code>compile.clj&lt;/code>:&lt;/p>
 &lt;script src="https://gist.github.com/dainiusjocas/e9b154d7a1cbdca8558cd7c5d730d5d0.js">&lt;/script>
-&lt;p>Inspiration on how to write the script was taken from &lt;a href="https://www.reddit.com/r/Clojure/comments/8ltsrs/standalone_script_with_clj_including_dependencies/">here&lt;/a> and &lt;a href="https://github.com/tonsky/datascript/blob/master/release.clj">here&lt;/a>.&lt;/p>
-&lt;p>To instruct Uberdeps to put class files to the uberjar I've added &lt;code>classes&lt;/code> directory to the &lt;code>:paths&lt;/code> vector in &lt;code>deps.edn&lt;/code>.&lt;/p>
-&lt;p>Just for the convenience, in the Makefile I've put commands for AOT compilation right before the command to build an uberjar:&lt;/p>
+&lt;p>Inspiration on how to write the script was taken from
+&lt;a href="https://www.reddit.com/r/Clojure/comments/8ltsrs/standalone_script_with_clj_including_dependencies/" target="_blank" rel="noopener">here&lt;/a> and
+&lt;a href="https://github.com/tonsky/datascript/blob/master/release.clj" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
+&lt;p>To instruct Uberdeps to put class files to the uberjar I&amp;rsquo;ve added &lt;code>classes&lt;/code> directory to the &lt;code>:paths&lt;/code> vector in &lt;code>deps.edn&lt;/code>.&lt;/p>
+&lt;p>Just for the convenience, in the Makefile I&amp;rsquo;ve put commands for AOT compilation right before the command to build an uberjar:&lt;/p>
 &lt;pre>&lt;code>uberjar:
 rm -rf classes
 mkdir classes
@@ -1689,7 +1935,7 @@ clojure -A:uberjar --target target/my-jar-name.jar
 &lt;li>compiled classes are put in the &lt;code>classes&lt;/code> directory;&lt;/li>
 &lt;li>the alias for which namespaces should be AOT compiled is the default alias.&lt;/li>
 &lt;/ul>
-&lt;p>I hope that when a more generic solution will be needed either the Uberdeps will have an option for AOT compilatoin or I'll be clever enough to deal with the situation and write a follow up blog post with the workaround.&lt;/p></description></item><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</guid><description>&lt;p>I want to share my hard-won lessons on how to setup the Gitlab CI for Clojure projects based on tools.deps. I think that the Gitlab CI is a wonderful tool for CI workloads. But when you're going a bit sideways from the documented ways of doing things you have to do a bit of discovery for yourself.&lt;/p>
+&lt;p>I hope that when a more generic solution will be needed either the Uberdeps will have an option for AOT compilatoin or I&amp;rsquo;ll be clever enough to deal with the situation and write a follow up blog post with the workaround.&lt;/p></description></item><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</guid><description>&lt;p>I want to share my hard-won lessons on how to setup the Gitlab CI for Clojure projects based on tools.deps. I think that the Gitlab CI is a wonderful tool for CI workloads. But when you&amp;rsquo;re going a bit sideways from the documented ways of doing things you have to do a bit of discovery for yourself.&lt;/p>
 &lt;h2 id="gitlab-ci-cachesetup">Gitlab CI Cache Setup&lt;/h2>
 &lt;p>Usually I want to cache dependencies between all build and all branches. To achieve this I hard-code the cache key at the root of the &lt;code>.gitlab-ci.yml&lt;/code> file e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-yaml">cache:
@@ -1706,7 +1952,8 @@ key: one-key-to-rule-them-all
 paths:
 - ./.m2/repository
 &lt;/code>&lt;/pre>
-&lt;p>When it comes to gitlibs there is no public API for changing the default directory in &lt;code>tools.deps&lt;/code>. But the underlying &lt;code>tools.gitlibs&lt;/code> uses an environment variable to set where to store the &lt;a href="https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23">gitlibs conveniently named &lt;strong>GITLIBS&lt;/strong>&lt;/a>. E.g.&lt;/p>
+&lt;p>When it comes to gitlibs there is no public API for changing the default directory in &lt;code>tools.deps&lt;/code>. But the underlying &lt;code>tools.gitlibs&lt;/code> uses an environment variable to set where to store the
+&lt;a href="https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23" target="_blank" rel="noopener">gitlibs conveniently named &lt;strong>GITLIBS&lt;/strong>&lt;/a>. E.g.&lt;/p>
 &lt;pre>&lt;code class="language-bash">$ (export GITLIBS=&amp;quot;.gitlibs/&amp;quot; &amp;amp;&amp;amp; clojure -A:test)
 &lt;/code>&lt;/pre>
 &lt;p>Of course, we should not forget to configure the cache:&lt;/p>
@@ -1725,7 +1972,10 @@ paths:
 - ./.m2/repository
 - ./.gitlibs
 &lt;/code>&lt;/pre>
-&lt;p>If you want to disable cache for a particular job (e.g. you're linting with &lt;a href="https://github.com/borkdude/clj-kondo">clj-kondo&lt;/a>, which is delivered as a &lt;a href="https://www.graalvm.org/">GraalVM&lt;/a> compiled &lt;a href="https://www.graalvm.org/docs/reference-manual/native-image/">native image&lt;/a>), just give an empty map for a job's cache setup, e.g.:&lt;/p>
+&lt;p>If you want to disable cache for a particular job (e.g. you&amp;rsquo;re linting with
+&lt;a href="https://github.com/borkdude/clj-kondo" target="_blank" rel="noopener">clj-kondo&lt;/a>, which is delivered as a
+&lt;a href="https://www.graalvm.org/" target="_blank" rel="noopener">GraalVM&lt;/a> compiled
+&lt;a href="https://www.graalvm.org/docs/reference-manual/native-image/" target="_blank" rel="noopener">native image&lt;/a>), just give an empty map for a job&amp;rsquo;s cache setup, e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-yaml">lint:
 stage: test
 image: borkdude/clj-kondo
@@ -1734,6 +1984,9 @@ when: always
 script:
 - clj-kondo --lint src test
 &lt;/code>&lt;/pre>
-&lt;p>I've used the Gitlab CI cache while working on a streaming-text search library &lt;a href="https://github.com/tokenmill/beagle">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found &lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml">here&lt;/a>.&lt;/p>
+&lt;p>I&amp;rsquo;ve used the Gitlab CI cache while working on a streaming-text search library
+&lt;a href="https://github.com/tokenmill/beagle" target="_blank" rel="noopener">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found
+&lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
 &lt;p>Hope this helps!&lt;/p></description></item><item><title>Clojure Workflow @ TokenMill</title><link>https://www.jocas.lt/blog/talk/vilnius-clojure-meetup/</link><pubDate>Thu, 30 May 2019 19:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/talk/vilnius-clojure-meetup/</guid><description>&lt;iframe src="//www.slideshare.net/slideshow/embed_code/key/1Qto0UWEglVdpB" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> &lt;/iframe> &lt;div style="margin-bottom:5px"> &lt;strong> &lt;a href="//www.slideshare.net/Dainius/clojure-workflow-tokenmill-by-dainius-jocas" title="Clojure workflow @ TokenMill by Dainius Jocas" target="_blank">Clojure workflow @ TokenMill by Dainius Jocas&lt;/a> &lt;/strong>&lt;/div>
-&lt;p>The source code of the demo project can be found &lt;a href="https://github.com/dainiusjocas/clojure-meetup-vilnius-2019-05-30">here&lt;/a>.&lt;/p></description></item></channel></rss>
+&lt;p>The source code of the demo project can be found
+&lt;a href="https://github.com/dainiusjocas/clojure-meetup-vilnius-2019-05-30" target="_blank" rel="noopener">here&lt;/a>.&lt;/p></description></item></channel></rss>

@@ -27,7 +27,7 @@ Specify your pipeline with the [`index.default_pipeline`](https://www.elastic.co
 
 ### The Problem
 
-We need to index the log data into the Elasticsearch cluster using a [Kafka Connect Elasticsearch Sink Connector](https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html) [^1], the data should be split into daily indices, and we need to specify the Elasticsearch ingest pipeline.
+We need to index the log data into the [Elasticsearch](https://www.elastic.co/) cluster using a [Kafka Connect Elasticsearch Sink Connector](https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html) [^1], the data should be split into daily indices, and we need to specify the Elasticsearch ingest pipeline.
 
 The [documentation of the connector](https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/configuration_options.html) doesn't mention anything about ingest pipelines. After a quick consultation with the Internet you discover that there is an open [issue](https://github.com/confluentinc/kafka-connect-elasticsearch/issues/72) that Kafka Connect Elasticsearch Sink Connector doesn't support specifying an Elasticsearch ingest pipeline. WAT?
 

@@ -10,7 +10,7 @@ categories:
   - Kafka Connect
 summary: A workaround on how to leverage the Elasticsearch Ingest Pipelines when using Kafka Connect
 image:
-  caption: "[Photo by Medium](https://medium.com/@SrinivasChoudhury/real-time-data-streaming-from-mysql-to-elasticsearch-using-kafka-3881657c06d6)"
+  caption: "Kafka Connect Elasticsearch Sink"
   focal_point: "Center"
   placement: 1
   preview_only: false
@@ -23,17 +23,17 @@ output:
 
 ### TL;DR
 
-Specify the [`index.default_pipeline`](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings) in the index (or index template) settings.
+Specify your pipeline with the [`index.default_pipeline`](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings) setting in the index (or index template) settings.
 
 ### The Problem
 
-We need to index the log data into the Elasticsearch cluster using a [Kafka Connect Elasticsearch Sink Connector](https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html) [^1], the data should be split into daily indices, and you need to specify the Elasticsearch ingest pipeline.
+We need to index the log data into the Elasticsearch cluster using a [Kafka Connect Elasticsearch Sink Connector](https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html) [^1], the data should be split into daily indices, and we need to specify the Elasticsearch ingest pipeline.
 
 The [documentation of the connector](https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/configuration_options.html) doesn't mention anything about ingest pipelines. After a quick consultation with the Internet you discover that there is an open [issue](https://github.com/confluentinc/kafka-connect-elasticsearch/issues/72) that Kafka Connect Elasticsearch Sink Connector doesn't support specifying an Elasticsearch ingest pipeline. WAT?
 
 ### The Workaround
 
-Say our pipeline just renames a field name, e.g.:
+Say[^4], our pipeline[^5] just renames an attribute, e.g.:
 ```shell script
 PUT _ingest/pipeline/my_pipeline_id
 {
@@ -70,13 +70,13 @@ PUT _index_template/template_1
 ``` 
 Note, that for indexing not to fail, we should create the Elasticsearch ingest pipeline[^2] **before** setting up the index template.
 
-That is it, now when Kafka Connect will create a new daily index the Elasticsearch ingest pipeline is going to be applied to every document.
-
-Also, there is an index setting called `index.final_pipeline` that if specified is going to be executed after all other pipelines.
+That is it, now when Kafka Connect will create a new daily index the Elasticsearch ingest pipeline is going to be applied to every document without any issues, for free, and in no time.
   
 ### Bonus
 
 One thing to note is that only one pipeline can be specified for `index.default_pipeline` which might sound a bit limiting. A clever trick to overcome that limitation is to use a series of [pipeline processors](https://www.elastic.co/guide/en/elasticsearch/reference/current/pipeline-processor.html) that can invoke other pipelines in the specified order, i.e. pipeline of pipelines.
+
+Also, there is an index setting called `index.final_pipeline` that if specified is going to be executed after all other pipelines.
 
 Testing pipelines can be done using the [`_simulate` API](https://www.elastic.co/guide/en/elasticsearch/reference/master/simulate-pipeline-api.html).
 
@@ -87,3 +87,5 @@ Thanks for reading and leave comments or any other feedback on this blog post in
 [^1]: or any other technology that doesn't support, or it is just not possible to specify the Elasticsearch ingest pipeline.
 [^2]: technically, before an index is created that matches the template pattern.
 [^3]: set `index.default_pipeline=my_pipeline_id` for every new daily index with, say, a cron-job at midnight.
+[^4]: yes, I know that the same job can be done with the [Kafka Connect Transformations](https://docs.confluent.io/current/connect/transforms/index.html).
+[^5]: let's leave out the Kafka Connector setup.

@@ -89,6 +89,10 @@ if (record.version != null) {
 
 The full code can be found [here](ttps://github.com/confluentinc/kafka-connect-elasticsearch/pull/422). Let's hope that Confluent developers will find some time to merge that PR.
 
+### Conclusion
+
+Thank you for reading and leave your feedback [here](https://github.com/dainiusjocas/blog/issues/12).
+
 ### P.S.
  
 Of course, this is not the only situation when data can get [corrupted](https://github.com/confluentinc/kafka-connect-elasticsearch/issues), e.g. when you delete the topic, repopulate it with up-to-date data (also, you skip deletes), and indexing does pretty much nothing, because all the versions are earlier `external version`. But let's leave them aside.

@@ -1,4 +1,83 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/tags/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>Elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Wed, 08 Jul 2020 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Elasticsearch</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link></image><item><title>A Neat Trick with Elasticsearch Normalizers</title><link>https://www.jocas.lt/blog/post/elasticsearch-normlizers/</link><pubDate>Wed, 08 Jul 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/elasticsearch-normlizers/</guid><description>&lt;p>To analyze the textual data Elasticsearch uses &lt;strong>analyzers&lt;/strong> while for the keyword analysis there is a thing called a &lt;strong>normalizer&lt;/strong>. In this article I&amp;rsquo;ll explain what the normalizer is and show it&amp;rsquo;s use case for &lt;strong>normalizing&lt;/strong> URLs.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/tags/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>Elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Sun, 02 Aug 2020 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Elasticsearch</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link></image><item><title>How to Use Elasticsearch Ingest Pipelines with Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/ingest_pipeline_kafka_connect/</link><pubDate>Sun, 02 Aug 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/ingest_pipeline_kafka_connect/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
+&lt;p>Specify your pipeline with the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings" target="_blank" rel="noopener">&lt;code>index.default_pipeline&lt;/code>&lt;/a> setting in the index (or index template) settings.&lt;/p>
+&lt;h3 id="the-problem">The Problem&lt;/h3>
+&lt;p>We need to index the log data into the
+&lt;a href="https://www.elastic.co/" target="_blank" rel="noopener">Elasticsearch&lt;/a> cluster using a
+&lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html" target="_blank" rel="noopener">Kafka Connect Elasticsearch Sink Connector&lt;/a> &lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>, the data should be split into daily indices, and we need to specify the Elasticsearch ingest pipeline.&lt;/p>
+&lt;p>The
+&lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/configuration_options.html" target="_blank" rel="noopener">documentation of the connector&lt;/a> doesn&amp;rsquo;t mention anything about ingest pipelines. After a quick consultation with the Internet you discover that there is an open
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues/72" target="_blank" rel="noopener">issue&lt;/a> that Kafka Connect Elasticsearch Sink Connector doesn&amp;rsquo;t support specifying an Elasticsearch ingest pipeline. WAT?&lt;/p>
+&lt;h3 id="the-workaround">The Workaround&lt;/h3>
+&lt;p>Say&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>, our pipeline&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> just renames an attribute, e.g.:&lt;/p>
+&lt;pre>&lt;code class="language-shell">PUT _ingest/pipeline/my_pipeline_id
+{
+&amp;quot;description&amp;quot; : &amp;quot;renames the field name&amp;quot;,
+&amp;quot;processors&amp;quot; : [
+{
+&amp;quot;rename&amp;quot;: {
+&amp;quot;field&amp;quot;: &amp;quot;original_field_name&amp;quot;,
+&amp;quot;target_field&amp;quot;: &amp;quot;target_field_name&amp;quot;
+}
+}
+]
+}
+&lt;/code>&lt;/pre>
+&lt;p>The Elasticsearch ingest pipeline for indexing can be specified in several ways:&lt;/p>
+&lt;ol>
+&lt;li>for each index request as a
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/ingest.html" target="_blank" rel="noopener">URL parameter&lt;/a>,&lt;/li>
+&lt;li>per bulk index request as a URL parameter,&lt;/li>
+&lt;li>for every
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#docs-bulk-api-query-params" target="_blank" rel="noopener">bulk index request operation&lt;/a>,&lt;/li>
+&lt;li>index settings (
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings" target="_blank" rel="noopener">a dynamic attribute&lt;/a>),&lt;/li>
+&lt;li>index template.&lt;/li>
+&lt;/ol>
+&lt;p>First three options are not supported by Kafka Connect. The fourth option is not convenient in our case because the data should be split into time-based (e.g. daily) indices and we don&amp;rsquo;t want to do repetitive tasks&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>. The natural option to follow is to define an
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html" target="_blank" rel="noopener">index template&lt;/a>. In the index template we can specify the &lt;code>index.default_pipeline&lt;/code> parameter, e.g.&lt;/p>
+&lt;pre>&lt;code class="language-shell">PUT _index_template/template_1
+{
+&amp;quot;index_patterns&amp;quot;: [&amp;quot;daily_log*&amp;quot;],
+&amp;quot;template&amp;quot;: {
+&amp;quot;settings&amp;quot;: {
+&amp;quot;index.default_pipeline&amp;quot;: &amp;quot;my_pipeline_id&amp;quot;
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Note, that for indexing not to fail, we should create the Elasticsearch ingest pipeline&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup> &lt;strong>before&lt;/strong> setting up the index template.&lt;/p>
+&lt;p>That is it, now when Kafka Connect will create a new daily index the Elasticsearch ingest pipeline is going to be applied to every document without any issues, for free, and in no time.&lt;/p>
+&lt;h3 id="bonus">Bonus&lt;/h3>
+&lt;p>One thing to note is that only one pipeline can be specified for &lt;code>index.default_pipeline&lt;/code> which might sound a bit limiting. A clever trick to overcome that limitation is to use a series of
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/pipeline-processor.html" target="_blank" rel="noopener">pipeline processors&lt;/a> that can invoke other pipelines in the specified order, i.e. pipeline of pipelines.&lt;/p>
+&lt;p>Also, there is an index setting called &lt;code>index.final_pipeline&lt;/code> that if specified is going to be executed after all other pipelines.&lt;/p>
+&lt;p>Testing pipelines can be done using the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/simulate-pipeline-api.html" target="_blank" rel="noopener">&lt;code>_simulate&lt;/code> API&lt;/a>.&lt;/p>
+&lt;h3 id="fin">Fin&lt;/h3>
+&lt;p>Thanks for reading and leave comments or any other feedback on this blog post in the
+&lt;a href="https://github.com/dainiusjocas/blog/issues/9" target="_blank" rel="noopener">Github issue&lt;/a>. Examples were tested to work with Elasticsearch and Kibana 7.8.1.&lt;/p>
+&lt;section class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1" role="doc-endnote">
+&lt;p>or any other technology that doesn&amp;rsquo;t support, or it is just not possible to specify the Elasticsearch ingest pipeline. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2" role="doc-endnote">
+&lt;p>yes, I know that the same job can be done with the
+&lt;a href="https://docs.confluent.io/current/connect/transforms/index.html" target="_blank" rel="noopener">Kafka Connect Transformations&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3" role="doc-endnote">
+&lt;p>let&amp;rsquo;s leave out the Kafka Connector setup. &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:4" role="doc-endnote">
+&lt;p>set &lt;code>index.default_pipeline=my_pipeline_id&lt;/code> for every new daily index with, say, a cron-job at midnight. &lt;a href="#fnref:4" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:5" role="doc-endnote">
+&lt;p>technically, before an index is created that matches the template pattern. &lt;a href="#fnref:5" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/section></description></item><item><title>A Neat Trick with Elasticsearch Normalizers</title><link>https://www.jocas.lt/blog/post/elasticsearch-normlizers/</link><pubDate>Wed, 08 Jul 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/elasticsearch-normlizers/</guid><description>&lt;p>To analyze the textual data Elasticsearch uses &lt;strong>analyzers&lt;/strong> while for the keyword analysis there is a thing called a &lt;strong>normalizer&lt;/strong>. In this article I&amp;rsquo;ll explain what the normalizer is and show it&amp;rsquo;s use case for &lt;strong>normalizing&lt;/strong> URLs.&lt;/p>
 &lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>A neat use case for keyword normalizers is to extract a specific part of the URL with a char_filter of the &lt;code>pattern_replace&lt;/code> type.&lt;/p>
 &lt;h2 id="introduction">Introduction&lt;/h2>

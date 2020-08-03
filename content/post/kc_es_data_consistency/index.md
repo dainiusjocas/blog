@@ -23,12 +23,12 @@ output:
 
 ### TL;DR
 
-when the [Elasticsearch indexer](https://github.com/confluentinc/kafka-connect-elasticsearch) is highly concurrent, Kafka record keys are used as Elasticsearch document IDs, and indexer is set to delete records on `null` values, then Kafka Connect might corrupt your data: documents that should not be deleted, end up being deleted. The fix is to use external versioning for deletes in bulk requests.
+When the [Elasticsearch indexer](https://github.com/confluentinc/kafka-connect-elasticsearch) is highly concurrent, Kafka record keys are used as Elasticsearch document IDs, and indexer is set to delete records on `null` values, then Kafka Connect might corrupt your data: documents that should not be deleted, end up being deleted. The fix is to use external versioning for deletes in bulk requests.
 
 ### The problem
 
 As of version 5.5.1 of the Confluent Platform (last checked on 2020-08-02) the bug that might lead to data corruption is still present.
-and if we have
+
 Elasticsearch uses [optimistic concurrency control](https://www.elastic.co/guide/en/elasticsearch/reference/current/optimistic-concurrency-control.html). The job of this concurrency mechanism is to ensure that older version of the document doesn't override a newer version. By default, order of arrival is applied, but the behaviour can be overriden in [several ways](https://www.elastic.co/blog/elasticsearch-versioning-support) depending on the version of Elasticsearch.
 
 Here we are interested in cases when bulk requests arrive out of order. To help Elasticsearch resolve the out-of-order indexing requests Kafka Connect leverages the [`external` document](https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L564) versioning[^1]. Using external versions in Kafka Connect makes sense because we already have versioning in place: kafka topic offsets. If Kafka Connect applies changes to Elasticsearch indices in order of the topic offset, then any ordering problems would be problems in the upstream system. 

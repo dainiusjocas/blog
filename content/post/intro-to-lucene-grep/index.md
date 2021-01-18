@@ -27,13 +27,15 @@ Have you ever wished that `grep` supported stemming so that you dont have to wri
 
 I'm perfectly aware that comparing Lucene and `grep` is like comparing apples to oranges. However, I think that `lmgrep` is best compared with the very tool that inspired it, that is `grep`.
 
+Anyway, what does `grep` do? `grep` reads a line from `stdin`, examines the line to see if it should be forwarded to `stdout`, and repeats until stdin is exhausted. `lmgrep` tries to mimick exactly that functionality. Of course, there are many more options to `grep` but it the essence of the tool.
+
 What distinguishes `lmgrep` search from `grep`:
 - Lucene query syntax is better suited for full-text search;
 - Boolean operators allow to construct complex, well-designed queries;
 - Text analysis can be customized to the language of the documents;
 - Flexible text analysis pipeline that includes, lowercasing, ASCII-filding, stemming, etc;
-- Supports regexp within other query parts;
-- Is not line-oriented, e.g. phrases can span multiple lines
+- regexps can be combined with other query elements;
+- Is not line-oriented, e.g. phrases can span multiple lines.
 
 Several limitation of `lmgrep` compared to `grep`:
 - `grep` is faster when it comes to raw performance;
@@ -62,7 +64,7 @@ What about the text analysis pipeline? By default it uses the `StandardTokenizer
 
 Almost every NLP project that I've worked on had the component called dictionary annotator. Also, the wast majority of the projects used Elasticsearch in one way or another. The more familiar I've got with Elasticsearch I've got the more of my NLP workload shifted towards implementing it in Elasticsearch. One day I've discovered a tool caled [Luwak](https://github.com/flaxsearch/luwak) (cool name isn't it?) and read some [more about it](https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/). It kind of opened my eyes: the dictionary annotator can be implemented using Elasticsearch and the dictionary entries can be seen as Elasticsearch queries. Thankfully, Elasticsearch has Percolator that hides all the complexity of managing temporary indices, etc.
 
-Then I was given was an NLP project where one of the requirements was to implement data analysis using AWS serverless stuff: Lambda for processing and Dynamo DB for storage. Of course, one of the NLP componens needed was the dictionary annotator. Since Elasticsearch was not available because it is not serverless but I still wanted to continue working with dictionary entries search queries, I've decided to leverage the Luwak library. From the experiences of that exact project the [Beagle](https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/) library was born.
+Then I was given was an NLP project where one of the requirements was to implement data analysis using AWS serverless stuff: Lambda for processing and Dynamo DB for storage. Of course, one of the NLP componens needed was the dictionary annotator. Since Elasticsearch was not available because it is not serverless but I still wanted to continue working with dictionary entries as search queries, I've decided to leverage the Luwak library. From the experience of that exact project the [Beagle](https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/) library was born. `lmgrep` is loosely based on Beagle.
 
 When thinking about how to imlement `lmgrep` I knew that I want it to be based on Lucene because of the full-text search features, but to be usable as a CLI tool it has to be compiled with the `native-image` tool of the GraalVM. I've tried but the `native-image` doesn't support [Method Handles](https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/). So some more hacking needed to be done. I was lucky when one day I've discovered a [toy project](https://web.archive.org/web/2/https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/) where the blog search was backed by AWS lambda that ran the Lucene that was compiled by the `native-image` tool. I've cloned the code, `mvnw install`, included artefacts to the dependencies list, and `lmgrep` compiled with the `native-image` tool successfully.
 

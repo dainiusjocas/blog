@@ -1,4 +1,100 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts | Dainius Jocas</title><link>https://www.jocas.lt/blog/post/</link><atom:link href="https://www.jocas.lt/blog/post/index.xml" rel="self" type="application/rss+xml"/><description>Posts</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2020 Dainius Jocas</copyright><lastBuildDate>Sat, 03 Oct 2020 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Posts</title><link>https://www.jocas.lt/blog/post/</link></image><item><title>How to Prevent Data Corruption in Elasticsearch When Using Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/kc_es_data_consistency/</link><pubDate>Sat, 03 Oct 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kc_es_data_consistency/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts | Dainius Jocas</title><link>https://www.jocas.lt/blog/post/</link><atom:link href="https://www.jocas.lt/blog/post/index.xml" rel="self" type="application/rss+xml"/><description>Posts</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 30 Jan 2021 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Posts</title><link>https://www.jocas.lt/blog/post/</link></image><item><title>lmgrep - Lucene Based grep-like Utility</title><link>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</link><pubDate>Sat, 30 Jan 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+&lt;p>What if &lt;code>grep&lt;/code> supported the functionality of a proper search engine like
+&lt;a href="https://www.elastic.co/elasticsearch/" target="_blank" rel="noopener">Elasticsearch&lt;/a> without a need to install any servers or index the files before searching? &lt;code>lmgrep&lt;/code> aims to provide you just that. It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.&lt;/p>
+&lt;h2 id="my-motivation">My motivation&lt;/h2>
+&lt;p>Have you ever wished that &lt;code>grep&lt;/code> supported
+&lt;a href="https://en.wikipedia.org/wiki/Text_segmentation#Word_segmentation" target="_blank" rel="noopener">tokenization&lt;/a>,
+&lt;a href="https://en.wikipedia.org/wiki/Stemming" target="_blank" rel="noopener">stemming&lt;/a>, etc, so that you don&amp;rsquo;t have to write wildcard
+&lt;a href="https://en.wikipedia.org/wiki/Regular_expression" target="_blank" rel="noopener">regular expressions&lt;/a> all the time? I&amp;rsquo;ve also shared that question and on a one nice day, I&amp;rsquo;ve tried to scratch that itch by exposing the
+&lt;a href="https://lucene.apache.org/" target="_blank" rel="noopener">Lucene&lt;/a> query syntax as a CLI utility. &lt;code>lmgep&lt;/code> is the result of my effort.
+&lt;a href="https://github.com/dainiusjocas/lucene-grep" target="_blank" rel="noopener">Give it a try&lt;/a> and let me know how it goes.&lt;/p>
+&lt;h2 id="full-text-search-vs-grep">Full-text Search vs. &lt;code>grep&lt;/code>&lt;/h2>
+&lt;p>I&amp;rsquo;m perfectly aware that comparing Lucene and &lt;code>grep&lt;/code> is like comparing apples to oranges. However, I think that &lt;code>lmgrep&lt;/code> is best compared with the very tool that inspired it, namely &lt;code>grep&lt;/code>.&lt;/p>
+&lt;p>Anyway, what does &lt;code>grep&lt;/code> do? &lt;code>grep&lt;/code> reads a line from &lt;code>stdin&lt;/code>, examines the line to see if it should be forwarded to &lt;code>stdout&lt;/code>, and repeats until stdin is exhausted&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. &lt;code>lmgrep&lt;/code> tries to mimick exactly that functionality. Of course, there are many more options to &lt;code>grep&lt;/code> but it is the essence of the tool.&lt;/p>
+&lt;p>Several notable advantages of &lt;code>lmgrep&lt;/code> over &lt;code>grep&lt;/code>:&lt;/p>
+&lt;ul>
+&lt;li>Lucene query syntax is better suited for full-text search;&lt;/li>
+&lt;li>Boolean operators allow to construct complex, well-designed queries;&lt;/li>
+&lt;li>Text analysis can be customized to the language of the documents;&lt;/li>
+&lt;li>Fuzzy text searches;&lt;/li>
+&lt;li>Flexible text analysis pipeline that includes, lowercasing,
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-asciifolding-tokenfilter.html" target="_blank" rel="noopener">ASCII-folding&lt;/a>, stemming, etc;&lt;/li>
+&lt;li>regular expressions can be combined with other Lucene query components;&lt;/li>
+&lt;li>Search matches can span multiple lines, i.e. search is not line-oriented.&lt;/li>
+&lt;/ul>
+&lt;p>Several notable limitations of &lt;code>lmgrep&lt;/code> when compared to &lt;code>grep&lt;/code>:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>grep&lt;/code> is faster when it comes to raw speed for large text files;&lt;/li>
+&lt;li>&lt;code>grep&lt;/code> has a smaller memory footprint;&lt;/li>
+&lt;li>Not all options of &lt;code>grep&lt;/code> are supported;&lt;/li>
+&lt;/ul>
+&lt;h2 id="why-lucene">Why Lucene?&lt;/h2>
+&lt;p>Lucene is a Java library that provides indexing and search features. Lucene has been more than 20 years in development and it is the library that powers many search applications. Also, many developers are already familiar with the Lucene query syntax and know how to leverage it to solve complicated information retrieval problems.&lt;/p>
+&lt;p>However powerful Lucene is, it is not well-suited for CLI application. The main problem is the startup time of JVM. To reduce the startup time I&amp;rsquo;ve compiled &lt;code>lmgrep&lt;/code> with the &lt;code>native-image&lt;/code> tool provided by
+&lt;a href="https://www.graalvm.org/" target="_blank" rel="noopener">GraalVM&lt;/a>. In this way, the startup time is around 0.01s for Linux, macOS, and Windows.&lt;/p>
+&lt;h2 id="how-does-lmgrep-work">How does &lt;code>lmgrep&lt;/code> work?&lt;/h2>
+&lt;p>&lt;code>lmgrep&lt;/code> by default expects two parameters: a search query and a
+&lt;a href="https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-" target="_blank" rel="noopener">GLOB pattern&lt;/a> (similar to regexp) to find files to execute &lt;code>lmgrep&lt;/code> on. I assume that the dear reader doesn&amp;rsquo;t want to be tortured by reading the explanation on how the file names are being matched with GLOB, so I&amp;rsquo;ll skip it. Instead, I&amp;rsquo;ll focus on explaining how the search works within a file.&lt;/p>
+&lt;p>&lt;code>lmgrep&lt;/code> creates a
+&lt;a href="https://lucene.apache.org/core/8_7_0/monitor/org/apache/lucene/monitor/Monitor.html" target="_blank" rel="noopener">Lucene Monitor (Monitor)&lt;/a> object from the provided search query. Then text file is split into lines&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Each line of text is passed to the Monitor for searching. The Monitor then creates an in-memory Lucene index with a single document created out of the line of text. Then the Monitor runs the search query on that in-memory index in the good ol' Lucene way&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>. &lt;code>lmgrep&lt;/code> takes the hits, formats them, and sends results to &lt;code>STDOUT&lt;/code>. That is how &lt;code>lmgrep&lt;/code> does the full-text search.&lt;/p>
+&lt;p>The overall searching approach is similar to the one of
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-percolate-query.html" target="_blank" rel="noopener">Percolator&lt;/a> in Elasticsearch. &lt;code>lmgrep&lt;/code> just limits the number of stored search queries to one and treats every text line as a document. A cool thing compared with the Percolator is that &lt;code>lmgrep&lt;/code> provides exact offsets of the matched terms while Elasticsearch does not expose offsets when highlighting.&lt;/p>
+&lt;p>The described procedure seems to be somewhat inefficient. However, the &lt;strong>query parsing&lt;/strong> for &lt;strong>all&lt;/strong> the lines (and files) is done only once. Also, the searching itself is efficient thanks to Lucene in general and when queries are complicated thanks to the
+&lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Presearcher.html" target="_blank" rel="noopener">Presearcher&lt;/a> of the Lucene Monitor in particular. Presearcher extracts terms from the search query and if none of these terms are in the index then a full query is not executed at all. Of course, many optimizations can be (and will be) implemented for &lt;code>lmgrep&lt;/code> such as batching of the documents. In general, the performance is limited by the Lucene Monitor.&lt;/p>
+&lt;p>What about the text analysis pipeline? By default, &lt;code>lmgrep&lt;/code> uses the &lt;code>StandardTokenizer&lt;/code> to tokenize text. Then the tokens are passed through several token filters in the following order: &lt;code>LowerCaseFilter&lt;/code>, &lt;code>ASCIIFoldingFilter&lt;/code>, and &lt;code>SnowballFilter&lt;/code> which is given the &lt;code>EnglishStemmer&lt;/code>. The same analysis pipeline is used for both the indexing and querying. All the components of the analysis pipeline are configurable via CLI flags, see the
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/main/README.md#supported-tokenizers" target="_blank" rel="noopener">README&lt;/a>. However, the order of the token filters, as of now, is not configurable. Moreover, various filters are not exposed at all (e.g. &lt;code>StopwordsFilter&lt;/code>, or
+&lt;a href="https://lucene.apache.org/core/7_4_0/analyzers-common/org/apache/lucene/analysis/miscellaneous/WordDelimiterGraphFilter.html" target="_blank" rel="noopener">WordDelimiterGraphFilter&lt;/a>, etc.). Supporting a more flexible analysis pipeline configuration is left out for future releases. The more users the tool has the faster new features will be implemented ;)&lt;/p>
+&lt;h2 id="prehistory-of-the-lmgrep">Prehistory of the &lt;code>lmgrep&lt;/code>&lt;/h2>
+&lt;p>Almost every NLP project that I&amp;rsquo;ve worked on had the component called &lt;strong>dictionary annotator&lt;/strong>. Also, the vast majority of the projects used Elasticsearch in one way or another. The more familiar I&amp;rsquo;ve got with Elasticsearch I&amp;rsquo;ve got, the more of my NLP workload shifted towards implementing it inside Elasticsearch. One day I&amp;rsquo;ve discovered a tool called
+&lt;a href="https://github.com/flaxsearch/luwak" target="_blank" rel="noopener">Luwak&lt;/a> (a cool name isn&amp;rsquo;t it?) and read
+&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">more about it&lt;/a>. It kind of opened my eyes: the dictionary annotator can be implemented using Elasticsearch and the dictionary entries can be expressed as Elasticsearch queries. Thankfully, Elasticsearch has Percolator that hides all the complexity of managing temporary indices, batching search requests, etc.&lt;/p>
+&lt;p>Then I was given was an NLP project where one of the requirements was to implement data analysis using AWS serverless stuff: Lambda for text processing and Dynamo DB for storage. Of course, one of the required NLP components was a dictionary annotator. Since Elasticsearch was not available (because it is not serverless) I still wanted to continue working with dictionary entries as search queries, I&amp;rsquo;ve decided to leverage the Luwak library. From experiences of that project, the
+&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">Beagle&lt;/a> library was born. &lt;code>lmgrep&lt;/code> is loosely based on Beagle.&lt;/p>
+&lt;p>When thinking about how to implement &lt;code>lmgrep&lt;/code> I wanted it to be based on Lucene because of the full-text search features. To provide a good experience the start-up time must be small. To achieve it, &lt;code>lmgrep&lt;/code> had to be compiled with the &lt;code>native-image&lt;/code> tool of the GraalVM. I&amp;rsquo;ve tried but the &lt;code>native-image&lt;/code> doesn&amp;rsquo;t support
+&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">Method Handles&lt;/a> that Lucene uses. Some more hacking was needed. I was lucky when I&amp;rsquo;ve discovered a
+&lt;a href="https://web.archive.org/web/2/https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/" target="_blank" rel="noopener">toy project&lt;/a> where the blog search was implemented on AWS Lambda that was backed by Lucene which was compiled by the &lt;code>native-image&lt;/code> tool. I&amp;rsquo;ve cloned the repo, &lt;code>mvnw install&lt;/code>, then included the artefacts to the dependencies list, and &lt;code>lmgrep&lt;/code> compiled with the &lt;code>native-image&lt;/code> tool successfully.&lt;/p>
+&lt;p>Then the most complicated part was to prepare executable binaries for different operating systems. Plenty of CPU, RAM, VirtualBox with Windows and macOS virtual machines, and
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/releases/tag/v2021.01.24" target="_blank" rel="noopener">here we go&lt;/a>.&lt;/p>
+&lt;p>Did I say how much I enjoyed trying to get stuff done on Windows? None at all. How come that multiple different(!) command prompts are needed to get GraalVM to compile an executable? Now I know that it would a lot better to suffer the pain and to set up the Github Actions pipeline to compile the binaries and upload them to release pages.&lt;/p>
+&lt;h2 id="what-is-missing">What is missing?&lt;/h2>
+&lt;ul>
+&lt;li>&lt;input disabled="" type="checkbox"> The analysis pipeline is not as flexible as I&amp;rsquo;d like to;&lt;/li>
+&lt;li>&lt;input disabled="" type="checkbox"> Leverage the multicore CPUs by executing the search in parallel;&lt;/li>
+&lt;li>&lt;input disabled="" type="checkbox"> Batch documents for matching;&lt;/li>
+&lt;li>&lt;input disabled="" type="checkbox"> Let me know if any?&lt;/li>
+&lt;/ul>
+&lt;h2 id="what-would-be-cool-ways-to-use-lmgrep">What would be cool ways to use &lt;code>lmgrep&lt;/code>?&lt;/h2>
+&lt;ul>
+&lt;li>&lt;code>tail&lt;/code> logs to &lt;code>lmgrep&lt;/code> and raise alerts;&lt;/li>
+&lt;li>Give an alias for &lt;code>lmgrep&lt;/code> with various options tailored for the code search (Java Example);&lt;/li>
+&lt;li>Why not expose
+&lt;a href="https://github.com/borkdude/sci" target="_blank" rel="noopener">sci&lt;/a> script as TokenFilter?&lt;/li>
+&lt;li>Why not
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenfilter.html" target="_blank" rel="noopener">ngrams token filter&lt;/a> then the search would be resilient to the typing errors?&lt;/li>
+&lt;li>Static website search, like AWS Lambda that has lmgrep and goes through all files on demand without upfront indexing.&lt;/li>
+&lt;/ul>
+&lt;h2 id="summary">Summary&lt;/h2>
+&lt;p>&lt;code>lmgrep&lt;/code> scratched my itch. It was exciting to get it working. I hope that you&amp;rsquo;ll also find it interesting and maybe useful. Give it a try, let me know how it was for you, and most importantly any feedback welcome on how to improve &lt;code>lmgrep&lt;/code>.&lt;/p>
+&lt;h2 id="references">References&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a href="https://web.archive.org/web/20210116173133/https://swtch.com/~rsc/regexp/regexp4.html">https://web.archive.org/web/20210116173133/https://swtch.com/~rsc/regexp/regexp4.html&lt;/a>&lt;/li>
+&lt;li>&lt;a href="https://web.archive.org/web/20161018234331/http://www.techrepublic.com/article/graduating-from-grep-powerful-text-file-searching-with-isearch/">https://web.archive.org/web/20161018234331/http://www.techrepublic.com/article/graduating-from-grep-powerful-text-file-searching-with-isearch/&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;h2 id="footnotes">Footnotes&lt;/h2>
+&lt;section class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1" role="doc-endnote">
+&lt;p>&lt;a href="https://ideolalia.com/essays/composition-is-interpretation.html">https://ideolalia.com/essays/composition-is-interpretation.html&lt;/a> &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2" role="doc-endnote">
+&lt;p>there is no necessity to split text files into lines, it is just to mimik how &lt;code>grep&lt;/code> operates. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3" role="doc-endnote">
+&lt;p>of course, the description is over-simplified, but it is accurate enough to get the overall idea. &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/section></description></item><item><title>How to Prevent Data Corruption in Elasticsearch When Using Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/kc_es_data_consistency/</link><pubDate>Sat, 03 Oct 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kc_es_data_consistency/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
 &lt;p>When the
 &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch" target="_blank" rel="noopener">Elasticsearch indexer&lt;/a> is highly concurrent, Kafka record keys are used as Elasticsearch document IDs, and indexer is set to delete records on &lt;code>null&lt;/code> values, then Kafka Connect Elasticsearch Sink Connector might corrupt your data: documents that should not be deleted end up being deleted, or documents that should be deleted end up still being present in the index. The fix is to use external versioning for deletes in bulk requests as it is proposed in this
 &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422" target="_blank" rel="noopener">Github Pull Request&lt;/a>.&lt;/p>

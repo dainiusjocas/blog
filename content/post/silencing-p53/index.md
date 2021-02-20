@@ -10,7 +10,7 @@ categories:
   - Hacks
 summary: "A battle story on how I've managed to silence the the Lenovo P53 lapton"
 image:
-  caption: "Thinkpad"
+  caption: "[Thinkpad P53](https://www.omgubuntu.co.uk/2019/06/lenovo-thinkpad-p-series-ubuntu-preinstalled)"
   focal_point: "Center"
   placement: 1
   preview_only: false

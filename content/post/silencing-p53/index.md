@@ -97,6 +97,8 @@ There is even the GUI for the [thinkfan](https://github.com/scientifichackers/th
 
 ![thinkfan GUI](thinkfan-gui.png)
 
+Note the two lines that starts with `Fan`. It means that two thinkpad fans are detected and controled.
+
 Note that with thinkfan it is up to you to write the settings into the file.
 
 ### CPU Power GUI

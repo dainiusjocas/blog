@@ -1,4 +1,112 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts | Dainius Jocas</title><link>https://www.jocas.lt/blog/post/</link><atom:link href="https://www.jocas.lt/blog/post/index.xml" rel="self" type="application/rss+xml"/><description>Posts</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 30 Jan 2021 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Posts</title><link>https://www.jocas.lt/blog/post/</link></image><item><title>lmgrep - Lucene Based grep-like Utility</title><link>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</link><pubDate>Sat, 30 Jan 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts | Dainius Jocas</title><link>https://www.jocas.lt/blog/post/</link><atom:link href="https://www.jocas.lt/blog/post/index.xml" rel="self" type="application/rss+xml"/><description>Posts</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 20 Feb 2021 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Posts</title><link>https://www.jocas.lt/blog/post/</link></image><item><title>Silencing the Lenovo Thinkpad P53 on Linux</title><link>https://www.jocas.lt/blog/post/silencing-p53/</link><pubDate>Sat, 20 Feb 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/silencing-p53/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+&lt;p>Lenovo Thinkpad P53 is a powerful laptop but a regular Linux install is just too loud for me. However, it is just a machine and there must be several control knobs that can make the experience better. In this post, I&amp;rsquo;ll share my setup that makes the laptop to be silent most of the time and performant when needed.&lt;/p>
+&lt;h2 id="the-motivation">The motivation&lt;/h2>
+&lt;p>To get my daily work done I spin many fat JVMs like Elasticsearch, Kafka, GraalVM native-image tool, &lt;code>docker-compose&lt;/code> clusters, virtual machines, etc. To plough through those tasks a year ago (in early 2020) I&amp;rsquo;ve got a top spec&amp;rsquo;ed Lenovo Thinkpad P53 laptop:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:right">Part&lt;/th>
+&lt;th style="text-align:left">Spec&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:right">CPU&lt;/td>
+&lt;td style="text-align:left">Intel(R) Core(TM) i9-9880H CPU @ 2.30GHz&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">Memory&lt;/td>
+&lt;td style="text-align:left">128GB (not a mistake here)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:right">Graphics Processor&lt;/td>
+&lt;td style="text-align:left">Nvidia Quadro RTX 4000&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>The laptop(!) can be so power-hungry that the charger needs to provide up to 230W(!). Just imagine how loud the fans get when executing computationally intensive tasks. I simply have to leave the room and close the door until the task is finished.&lt;/p>
+&lt;p>Anything that is CPU intensive makes the chip hot which spins the fans. By anything here I mean things like regular web browsing (looking at you JIRA), or a simple conference call (looking at you Google Meet and Zoom). I have some doubts that Lenovo has done the best possible job with the fans but I leave that on their conscience.&lt;/p>
+&lt;p>Although I run a lot of intensive tasks on a laptop, not all of my tasks are that demanding. Therefore, I want the laptop to be performant when needed (in this case I don&amp;rsquo;t mind it to be loud) and be as silent as possible when that can be achieved. And one additional requirement: I want to work with a Linux machine.&lt;/p>
+&lt;h2 id="prehistory">Prehistory&lt;/h2>
+&lt;p>When I got the laptop the first thing I&amp;rsquo;ve done was that I&amp;rsquo;ve installed Ubuntu since it is officially supported&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. In a very short time, I&amp;rsquo;ve discovered that at that time it was impossible to silence the laptop to a satisfiable level: Linux just had no drivers that could silence all(!) the fans&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>.&lt;/p>
+&lt;p>The hope was lost: I had to boot up Windows, setup WSL, and accommodate my development environment there. All because several drivers were missing (sigh). It&amp;rsquo;s worth to mention that I&amp;rsquo;ve set up a Windows box after more than 10 years of not touching Windows. It was just an OEM install with all the drivers, updates, etc. However, Windows setup had its own problems: for some reason (to me it was not a surprise) Windows 10 could not properly handle the sleep-wake-up cycle (its a laptop after all). But hey, I could disable the Nvidia GPU, then enable it, and everything would be working ok-ish again. I could get stuff done.&lt;/p>
+&lt;p>However, updating Windows is a thing that can be postponed only that long and when you do an update with a setup that can be seen as being a little bit exotic you might get a broken system that fails to boot up. Yeah, sure, then just run the system fix scripts and you can continue working.&lt;/p>
+&lt;p>Of course, it doesn&amp;rsquo;t help to have a good experience that it turned out that the laptop arrived with a faulty motherboard that caused all kinds of troubles among which the most painful was random shutdowns. Also, after those shutdowns sometimes even booting up was a real struggle. I guess that poor machine had only the best intentions and was telling me to stop torturing it and by failing to work gave me some well-deserved leisure time.&lt;/p>
+&lt;p>One day the machine after a Windows update really got stuck during the reboot. A blank screen with fans maxed out and no reaction to any button or to power cable unplugging. Several Google searches away and I&amp;rsquo;ve discovered that it was a known problem with Thinkpad (not only P53). So, the motherboard got replaced and the laptop got a fair bit more stable.&lt;/p>
+&lt;p>Also, even Windows that has supposedly good driver support from everyone (manufacturer, OS) involved has the power consumption and fan control options that are not all that powerful after all: there are predefined profiles with no manual tunning available. That makes me wonder how that software got accepted to be released in the first place?&lt;/p>
+&lt;h2 id="the-linux-setup">The Linux Setup&lt;/h2>
+&lt;p>The news somehow came to me that Linux kernel 5.11 has the support for the second fan that is present on some thinkpads&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>. It encouraged me to roll up the sleeves and get the P53 fans under my control.&lt;/p>
+&lt;p>The main pieces of the puzzle are the Linux kernel 5.11 and Kubuntu 21.04 pre-released: the kernel has the fans driver out of the box, and Kubuntu 21.04 provides Nvidia drivers that work with that kernel.&lt;/p>
+&lt;p>Also, there are a couple helper utilities that I&amp;rsquo;ve used:&lt;/p>
+&lt;ul>
+&lt;li>Fancontrol GUI&lt;/li>
+&lt;li>thinkfan (with GUI)&lt;/li>
+&lt;li>CPU Power GUI&lt;/li>
+&lt;/ul>
+&lt;h3 id="linux-kernel">Linux kernel&lt;/h3>
+&lt;p>I&amp;rsquo;ve installed 5.11 on Ubuntu 20.10 and it shouldn&amp;rsquo;t come to you as a surprise that Nvidia drivers were broken and the install script from the Nvidia website failed. So, a failed experiment.&lt;/p>
+&lt;p>I&amp;rsquo;ve used the
+&lt;a href="https://ubuntuhandbook.org/index.php/2020/08/mainline-install-latest-kernel-ubuntu-linux-mint/" target="_blank" rel="noopener">Mainline tool&lt;/a> to install the kernel.&lt;/p>
+&lt;h3 id="kubuntu-2104">Kubuntu 21.04&lt;/h3>
+&lt;p>When all hope was lost and I was about to go back to Windows for another half a year I got the last thing to try: why not upgrade Kubuntu to 21.04 which is not even in BETA? It would come with a newer kernel and most likely with Nvidia driver support.&lt;/p>
+&lt;p>It came with kernel 5.10 and Nvidia drivers worked. Unfortunately, the second fan was not detected. Another failed experiment.&lt;/p>
+&lt;p>The last hope was to ask Mainline to install kernel 5.11 and pray that Nvidia drivers are fine with it. Install, reboot, and voila: Nvidia driver works, an external monitor is detected (though only when connected with HDMI), and most importantly both fans are detected and controllable! Hurray!&lt;/p>
+&lt;h3 id="fancontrol">Fancontrol&lt;/h3>
+&lt;p>
+&lt;a href="https://github.com/Maldela/fancontrol-gui" target="_blank" rel="noopener">Fancontrol&lt;/a> is a GUI utility that allows you to control and set up fan profiles by adjusting two dots: for example, the temperature at which to start/stop spinning the fans and when to max them out.&lt;/p>
+&lt;p>&lt;img src="fancontrol-system-settings.png" alt="Fancontrol in KDE System Setting">&lt;/p>
+&lt;p>Note: I&amp;rsquo;ve installed it from the source code.
+Note: there is a standalone GUI but I like the integration into the KDE System Settings.&lt;/p>
+&lt;h3 id="thinkfan">Thinkfan&lt;/h3>
+&lt;p>Check the set up instructions
+&lt;a href="https://gist.github.com/Yatoom/1c80b8afe7fa47a938d3b667ce234559" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
+&lt;p>There is even the GUI for the
+&lt;a href="https://github.com/scientifichackers/thinkfan-control-gui" target="_blank" rel="noopener">thinkfan&lt;/a>. This will give a window like this:&lt;/p>
+&lt;p>&lt;img src="thinkfan-gui.png" alt="thinkfan GUI">&lt;/p>
+&lt;p>Note the two lines that starts with &lt;code>Fan&lt;/code>. It means that two Thinkpad fans are detected and controlable.&lt;/p>
+&lt;p>Note that with the &lt;code>thinkfan&lt;/code> it is up to you to write the settings into the file.&lt;/p>
+&lt;h3 id="cpu-power-gui">CPU Power GUI&lt;/h3>
+&lt;p>
+&lt;a href="https://ubuntuhandbook.org/index.php/2020/11/cpupower-gui-simple-tool-adjust-cpu-frequency/" target="_blank" rel="noopener">CPU Power GUI&lt;/a> is a simple graphical utility that allows you to change the frequency limits of your CPU and its governor:
+&lt;img src="cpupower-gui.png" alt="CPU frequency settings">&lt;/p>
+&lt;p>Install it from the official Ubuntu repositories.&lt;/p>
+&lt;pre>&lt;code class="language-bash">sudo apt install cpupower-gui
+&lt;/code>&lt;/pre>
+&lt;p>The trick here is that high CPU frequency leads to lots of heat which in turn spins the fans. When the frequency is limited not that much of the heat is created which prevents fans from kicking in. I&amp;rsquo;ve noticed that the minimal frequency (800 MHz) is enough to get some work done (e.g. zoom call). The temperature rarely goes up more than 60 degrees celsius.&lt;/p>
+&lt;p>Of course, with a limited CPU frequency, the machine is noticeably slower, but hey, it is a high-end CPU. The slowdown is most noticeable when starting up an app. For example, IntelliJ works but feels bad with the 800MHz limit.&lt;/p>
+&lt;h3 id="greenwithenvy">GreenWithEnvy&lt;/h3>
+&lt;p>For the Nvidia fans the
+&lt;a href="https://gitlab.com/leinardi/gwe" target="_blank" rel="noopener">GreenWithEnvy&lt;/a> looks promissing but I guess that the Quadro cards are not supported.&lt;/p>
+&lt;h2 id="summary">Summary&lt;/h2>
+&lt;p>It was a year-long development. Given the current setup, the tasks that are not super demanding can be done on a quiet machine where the only things I hear are my keyboard and the little Marshall Emberton speaker playing my favourite
+&lt;a href="https://www.youtube.com/watch?v=ZkW-K5RQdzo" target="_blank" rel="noopener">Rammstein&lt;/a>
+&lt;a href="https://www.youtube.com/watch?v=NeQM1c-XCDc" target="_blank" rel="noopener">tunes&lt;/a>. When my crazy performance test is set up, I allow the fans to spin at full speed and get the task done as fast as it can.&lt;/p>
+&lt;h2 id="ps-nvidia-and-linux">P.S. Nvidia and Linux&lt;/h2>
+&lt;p>Yeah, a laptop with an Nvidia GPU should be a red flag that prevents installing Linux in the first place. Of course, there are drivers and stuff, but in general good luck to have them properly working. However, Ubuntu gives you the setup that is worked out and works by default.&lt;/p>
+&lt;p>Also, there are open source drivers called Nouveau but they have problems of their own like external monitor support.&lt;/p>
+&lt;p>What is worse with this P53 is that &lt;strong>ALL&lt;/strong> video outputs are attached to the discrete GPU (what engineers in their right mind would do it?). This means that if drivers are not properly set-up Linux will able to output only 1 FPS while (for some reason) the mouse and some other windows (sometimes?) works without any lag.&lt;/p>
+&lt;p>Sure, things like
+&lt;a href="https://www.nvidia.com/en-us/geforce/technologies/optimus/technology/" target="_blank" rel="noopener">Optimus&lt;/a>,
+&lt;a href="https://forums.developer.nvidia.com/t/the-all-new-outputsink-feature-aka-reverse-prime/129828" target="_blank" rel="noopener">reverse PRIME&lt;/a> exist but I can only wish you good luck setting up these.&lt;/p>
+&lt;p>In summary, I wish there was a modification of the laptop that had only the integrated graphics.&lt;/p>
+&lt;h2 id="pss-setup-on-the-table">P.S.S. Setup on the table&lt;/h2>
+&lt;p>P53 is a big and fat laptop. Since most of the time I work from home due to covid-19, I don&amp;rsquo;t need to move or touch the machine that often. Therefore, it can stand on the table as a &amp;ldquo;triangle&amp;rdquo; (see a picture). This position allows air to circulate a little better. Also, in this way, it takes somewhat less space on the table. On the other hand, I can&amp;rsquo;t use the laptop screen and the keyword.&lt;/p>
+&lt;p>&lt;img src="thinkpad-setup.jpg" alt="My Table setup">&lt;/p>
+&lt;h2 id="footnotes">Footnotes&lt;/h2>
+&lt;section class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1" role="doc-endnote">
+&lt;p>&lt;a href="https://certification.ubuntu.com/hardware/202002-27747">https://certification.ubuntu.com/hardware/202002-27747&lt;/a> &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2" role="doc-endnote">
+&lt;p>I&amp;rsquo;ve tried several other distros (like Fedora 33) but without any luck. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3" role="doc-endnote">
+&lt;p>&lt;a href="https://www.phoronix.com/scan.php?page=news_item&amp;amp;px=ThinkPad-Dual-Fan-Control-5.8">https://www.phoronix.com/scan.php?page=news_item&amp;amp;px=ThinkPad-Dual-Fan-Control-5.8&lt;/a> &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/section></description></item><item><title>lmgrep - Lucene Based grep-like Utility</title><link>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</link><pubDate>Sat, 30 Jan 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>What if &lt;code>grep&lt;/code> supported the functionality of a proper search engine like
 &lt;a href="https://www.elastic.co/elasticsearch/" target="_blank" rel="noopener">Elasticsearch&lt;/a> without a need to install any servers or index the files before searching? &lt;code>lmgrep&lt;/code> aims to provide you just that. It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.&lt;/p>
 &lt;h2 id="my-motivation">My motivation&lt;/h2>

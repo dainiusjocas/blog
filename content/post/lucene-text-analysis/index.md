@@ -9,7 +9,7 @@ categories:
   - Lucene
 summary: "`lmgrep` exposes easy to use interface to work with Lucene text analysis"
 image:
-  caption: "Lucene"
+  caption: "[Photo by mongopi](https://mongopi.wordpress.com/tag/inverted-index/)"
   focal_point: "Center"
   placement: 1
   preview_only: false

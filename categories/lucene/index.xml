@@ -1,13 +1,134 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Lucene | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/lucene/</link><atom:link href="https://www.jocas.lt/blog/categories/lucene/index.xml" rel="self" type="application/rss+xml"/><description>Lucene</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 30 Jan 2021 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Lucene</title><link>https://www.jocas.lt/blog/categories/lucene/</link></image><item><title>lmgrep - Lucene Based grep-like Utility</title><link>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</link><pubDate>Sat, 30 Jan 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
-&lt;p>What if &lt;code>grep&lt;/code> supported the functionality of a proper search engine like
-&lt;a href="https://www.elastic.co/elasticsearch/" target="_blank" rel="noopener">Elasticsearch&lt;/a> without a need to install any servers or index the files before searching? &lt;code>lmgrep&lt;/code> aims to provide you just that. It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Lucene | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/lucene/</link><atom:link href="https://www.jocas.lt/blog/categories/lucene/index.xml" rel="self" type="application/rss+xml"/><description>Lucene</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Fri, 23 Apr 2021 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Lucene</title><link>https://www.jocas.lt/blog/categories/lucene/</link></image><item><title>lmgrep Text Analysis</title><link>https://www.jocas.lt/blog/post/lucene-text-analysis/</link><pubDate>Fri, 23 Apr 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/lucene-text-analysis/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+&lt;p>&lt;code>lmgrep&lt;/code> provides an easy way to play with various text analysis options.
+Just download the &lt;code>lmgrep&lt;/code> &lt;a href="https://github.com/dainiusjocas/lucene-grep/releases">binary&lt;/a>, run it with &lt;code>--only-analyze&lt;/code>, and observe the list of tokens.&lt;/p>
+&lt;pre>&lt;code class="language-shell">echo &amp;quot;Dogs and CATS&amp;quot; | lmgrep \
+--only-analyze \
+--analysis='
+{
+&amp;quot;tokenizer&amp;quot;: {&amp;quot;name&amp;quot;: &amp;quot;standard&amp;quot;},
+&amp;quot;token-filters&amp;quot;: [
+{&amp;quot;name&amp;quot;: &amp;quot;lowercase&amp;quot;},
+{&amp;quot;name&amp;quot;: &amp;quot;englishminimalstem&amp;quot;
+}
+]
+}'
+# =&amp;gt; [&amp;quot;dog&amp;quot;,&amp;quot;and&amp;quot;,&amp;quot;cat&amp;quot;]
+&lt;/code>&lt;/pre>
+&lt;h2 id="text-analysis">Text Analysis&lt;/h2>
+&lt;p>The &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html">Elasticsearch documentation&lt;/a> describes text analysis as:&lt;/p>
+&lt;blockquote>
+&lt;p>the process of converting unstructured text into a structured format that’s optimized for search.&lt;/p>
+&lt;/blockquote>
+&lt;p>Therefore, to learn how the full-text search works it is important to understand how the text is, well, analyzed.
+The remainder of the post focuses on how text analysis is done in &lt;a href="https://lucene.apache.org/">Lucene&lt;/a> which is the library that powers search engines like Elasticsearch and Solr, and what &lt;code>lmgrep&lt;/code> provides to analyze your text.&lt;/p>
+&lt;h1 id="lucene">Lucene&lt;/h1>
+&lt;p>Text analysis in the Lucene land is defined by 3 types of components:&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>list&lt;/strong> of character filters (changes to the text before tokenization, e.g. HTML stripping, character replacement, etc.),&lt;/li>
+&lt;li>&lt;strong>one&lt;/strong> tokenizer (splits text into tokens, e.g. at whitespace characters),&lt;/li>
+&lt;li>&lt;strong>list&lt;/strong> of token filters (normalizes the tokens, e.g. lowercases all the letters).&lt;/li>
+&lt;/ul>
+&lt;p>The combination of text analysis components makes an &lt;code>Analyzer&lt;/code>.
+You can think that an analyzer is a recipe to convert a string into a list of tokens&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>.&lt;/p>
+&lt;h2 id="lmgrep">&lt;code>lmgrep&lt;/code>&lt;/h2>
+&lt;p>&lt;code>lmgrep&lt;/code> is a search tool that is based on the &lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Monitor.html">Lucene Monitor&lt;/a> library.
+To do the full-text search it needs to do the same thing that likes of Elasticsearch are doing: to analyze text.
+&lt;code>lmgrep&lt;/code> packs many text &lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/analysis-components.md">analysis components&lt;/a>.
+Also, it provides a list of &lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/predefined-analyzers.md">predefined analyzers&lt;/a>.
+Nothing special here, the same battle tested and boring Lucene components that gets the job done&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>.&lt;/p>
+&lt;p>However, &lt;code>lmgrep&lt;/code> provides one clever twist to text analysis:
+a way to specify an analyzer using plain data in JSON, e.g.:&lt;/p>
+&lt;pre>&lt;code class="language-shell">echo &amp;quot;&amp;lt;p&amp;gt;foo bars baz&amp;lt;/p&amp;gt;&amp;quot; | \
+lmgrep \
+--only-analyze \
+--analysis='
+{
+&amp;quot;char-filters&amp;quot;: [
+{&amp;quot;name&amp;quot;: &amp;quot;htmlStrip&amp;quot;},
+{
+&amp;quot;name&amp;quot;: &amp;quot;patternReplace&amp;quot;,
+&amp;quot;args&amp;quot;: {
+&amp;quot;pattern&amp;quot;: &amp;quot;foo&amp;quot;,
+&amp;quot;replacement&amp;quot;: &amp;quot;bar&amp;quot;
+}
+}
+],
+&amp;quot;tokenizer&amp;quot;: {&amp;quot;name&amp;quot;: &amp;quot;standard&amp;quot;},
+&amp;quot;token-filters&amp;quot;: [
+{&amp;quot;name&amp;quot;: &amp;quot;englishMinimalStem&amp;quot;},
+{&amp;quot;name&amp;quot;: &amp;quot;uppercase&amp;quot;}
+]
+}
+'
+# =&amp;gt; [&amp;quot;BAR&amp;quot;,&amp;quot;BAR&amp;quot;,&amp;quot;BAZ&amp;quot;]
+&lt;/code>&lt;/pre>
+&lt;p>Again, nothing special here, read the docs&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> of an interesting text analysis component, e.g.
+character filter &lt;a href="https://lucene.apache.org/core/8_3_0/analyzers-common/org/apache/lucene/analysis/pattern/PatternReplaceCharFilterFactory.html">&lt;code>patternReplace&lt;/code>&lt;/a>,
+add its config to the &lt;code>--analysis&lt;/code>, and apply it on your text.&lt;/p>
+&lt;p>Conceptually it is very similar to what Elasticsearch or Solr are providing: &lt;code>analysis&lt;/code> part in the index configuration JSON in Elasticsearch, and Solr Schemas in XML.&lt;/p>
+&lt;p>&lt;code>lmgrep&lt;/code> analysis component has this structure:&lt;/p>
+&lt;pre>&lt;code>{&amp;quot;name&amp;quot;: &amp;quot;COMPONENT_NAME&amp;quot;, &amp;quot;args&amp;quot;: {&amp;quot;ARG_NAME&amp;quot;: &amp;quot;ARG_VALUE&amp;quot;}}
+&lt;/code>&lt;/pre>
+&lt;p>Notes:&lt;/p>
+&lt;ul>
+&lt;li>some components, e.g. &lt;code>stop&lt;/code> token filter, expect a file as an argument.
+To support such components &lt;code>lmgrep&lt;/code> brutally patched Lucene to load data from arbitrary files while preserving the predefined analyzers with, e.g. their custom stop-word files.&lt;/li>
+&lt;li>when a predefined analyzer is provided for text analysis then all other analysis components are silently ignored.&lt;/li>
+&lt;li>predefined analyzers do not support the &lt;code>args&lt;/code> as of &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/82">now&lt;/a>, just the &lt;code>name&lt;/code>.&lt;/li>
+&lt;li>&lt;code>lmgrep&lt;/code> as of now doesn&amp;rsquo;t provide a way to &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/83">share components between analyzers&lt;/a>.&lt;/li>
+&lt;/ul>
+&lt;p>That is pretty much all there is to know about how &lt;code>lmgrep&lt;/code> does text analysis. Try it out and let me know how it goes.&lt;/p>
+&lt;h2 id="--only-analyze">&lt;code>--only-analyze&lt;/code>&lt;/h2>
+&lt;p>I like the Elasticsearch&amp;rsquo;s &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html">Analyze API&lt;/a>.
+It allows me to look at the raw tokens that are either stored in the index or produced out of the search query.&lt;/p>
+&lt;p>To make debugging of &lt;code>lmgrep&lt;/code> easier I wanted to expose something similar to Analyze API. The &lt;code>--only-analyze&lt;/code> flag is my humble attempt to do that.&lt;/p>
+&lt;p>When the flag is specified then &lt;code>lmgrep&lt;/code> just outputs a list of tokens that is produced by applying an analyzer on the input text, e.g.:&lt;/p>
+&lt;pre>&lt;code class="language-shell">echo &amp;quot;the quick brown fox&amp;quot; | lmgrep --only-analyze
+# =&amp;gt; [&amp;quot;the&amp;quot;,&amp;quot;quick&amp;quot;,&amp;quot;brown&amp;quot;,&amp;quot;fox&amp;quot;]
+&lt;/code>&lt;/pre>
+&lt;h3 id="implementation">Implementation&lt;/h3>
+&lt;p>The machinery under the &lt;code>--only-analyze&lt;/code> works as follows:&lt;/p>
+&lt;ul>
+&lt;li>one thread is dedicated to read and decode the text input (either from STDIN or a file),&lt;/li>
+&lt;li>one thread is dedicated to write to the STDOUT,&lt;/li>
+&lt;li>the remaining CPU cores can be used by a thread pool that analyzes the text (thanks to Lucene Analyzer implementation being thread-safe).&lt;/li>
+&lt;/ul>
+&lt;p>On my laptop &lt;code>lmgrep&lt;/code> analyzes ~1GB of text in ~11 seconds and consumes maximum 609 MB of RAM. It should result in ~200 GB of text per hour. IMO, not bad. Of course, the more involved the text analysis is the longer it takes.&lt;/p>
+&lt;p>&lt;img src="text-analysis.png" alt="Performance">&lt;/p>
+&lt;p>Note that the output of &lt;code>--only-analyze&lt;/code> has the same order as the input. IMO, it makes the output a bit easier to understand. However, preserving the order limits the throughput. It is because the time and resources needed to analyze an individual piece of text can vary greatly, and the required coordination introduces some overhead.&lt;/p>
+&lt;p>Consider an example of analyzing the text attributes of a book: assume that the first line sent to &lt;code>lmgrep&lt;/code> is the title of the book, the second line contains a full text of the book, and the third line is the summary. The title is relatively small, it is quickly analyzed and immediately written to STDOUT. The summary is a bit longer but still many times smaller than the body. To preserve the order &lt;code>lmgrep&lt;/code> (before writing the tokens of the summary to STDOUT) waits for the analysis on the body to be finished and written to STDOUT and only then tokens of the summary are written out.&lt;/p>
+&lt;p>Notes:&lt;/p>
+&lt;ul>
+&lt;li>the &lt;code>--explain&lt;/code> flag is coming to &lt;code>lmgrep&lt;/code>;&lt;/li>
+&lt;li>the output lines are valid JSON (&lt;code>jq&lt;/code> is your friend);&lt;/li>
+&lt;li>the positional arguments for &lt;code>--only-analyze&lt;/code> are interpreted as files and when present then STDIN is ignored.&lt;/li>
+&lt;/ul>
+&lt;h3 id="interesting-bit">Interesting Bit&lt;/h3>
+&lt;p>One thing that constantly frustrates me with Elasticsearch&amp;rsquo;s Analysis API is that I can&amp;rsquo;t specify custom char filters, tokenizer, and token filter directly in the body of the request to the Analysis API.
+To observe the output of text analysis that involves custom text analysis components first I have to create an index with an analyzer and then call Analyze API that involves that index. &lt;code>lmgrep&lt;/code> avoids this pain point by allowing to declare text analysis components inline.&lt;/p>
+&lt;h2 id="post-script">Post Script&lt;/h2>
+&lt;p>All this analyzer construction wizardry is possible because of Lucene&amp;rsquo;s &lt;code>AbstractAnalysisFactory&lt;/code> class and features provided by its subclasses. The &lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.html">&lt;code>CustomAnalyzer&lt;/code>&lt;/a> builder exposes methods that expects a &lt;code>Class&lt;/code> as an argument, e.g. &lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.Builder.html#addCharFilter-java.lang.Class-java.util.Map-">&lt;code>addCharFilter&lt;/code>&lt;/a>. The trick here is that, e.g. the class &lt;a href="https://lucene.apache.org/core/7_3_1/analyzers-common/org/apache/lucene/analysis/util/TokenFilterFactory.html">&lt;code>TokenFilterFactory&lt;/code>&lt;/a> provides a method &lt;code>availableTokenFilters&lt;/code> that returns a set of &lt;code>names&lt;/code> of token filters and with those &lt;code>names&lt;/code> you can get a &lt;code>Class&lt;/code> object that can be supplied to &lt;code>CustomAnalyzer&lt;/code> builder methods.&lt;/p>
+&lt;p>The discovery of available factory classes is based on the classpath analysis, e.g. fetching all classes where name matches a pattern like &lt;code>.*FilterFactory&lt;/code> and are subclasses of a &lt;code>TokenFilterFactory&lt;/code>. However, for the reasons that were beyond my understanding, when I created my own &lt;code>TokenFilterFactory&lt;/code> class it was not discovered by Lucene &lt;code>¯\_(ツ)_/¯&lt;/code>.&lt;/p>
+&lt;p>Yeah, great, but &lt;code>lmgrep&lt;/code> is compiled with the GraalVM &lt;code>native-image&lt;/code> which assumes closed-world and throws the dynamism of the JVM out the window. How then does exactly this TokenFilterFactory-thing-class discovery works? Yes, Native images must include all the classes because at run-time it cannot create classes, but it can be worked around by providing the configuration with the classes that are going to be used at run-time, and those interesting classes can be reflectively discovered at run-time. &lt;code>lmgrep&lt;/code> relies on the Java classes being discoverable at compile-time where the reflection works as expected.&lt;/p>
+&lt;p>To instruct the &lt;code>native-image&lt;/code> to discover the Java classes from Clojure code you can specify the class under the regular &lt;code>def&lt;/code> because to the &lt;code>native-image&lt;/code> &lt;code>def&lt;/code>s look like constants and are &lt;strong>evaluated&lt;/strong> at compiled-time. So, if &lt;code>lmgrep&lt;/code> misses some awesome Lucene token filter, all it takes is to add it to the hashmap under a &lt;code>def&lt;/code>.&lt;/p>
+&lt;h2 id="footnotes">Footnotes&lt;/h2>
+&lt;section class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1" role="doc-endnote">
+&lt;p>&lt;a href="http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html">Lucene TokenStreams are actually graphs&lt;/a> &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2" role="doc-endnote">
+&lt;p>If something is missing then let me know by creating an issue &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues">here&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3" role="doc-endnote">
+&lt;p>Just Google for &amp;ldquo;Lucene &amp;lt;COMPONENT_NAME&amp;gt;&amp;rdquo; &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/section></description></item><item><title>lmgrep - Lucene Based grep-like Utility</title><link>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</link><pubDate>Sat, 30 Jan 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+&lt;p>What if &lt;code>grep&lt;/code> supported the functionality of a proper search engine like &lt;a href="https://www.elastic.co/elasticsearch/">Elasticsearch&lt;/a> without a need to install any servers or index the files before searching? &lt;code>lmgrep&lt;/code> aims to provide you just that. It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.&lt;/p>
 &lt;h2 id="my-motivation">My motivation&lt;/h2>
-&lt;p>Have you ever wished that &lt;code>grep&lt;/code> supported
-&lt;a href="https://en.wikipedia.org/wiki/Text_segmentation#Word_segmentation" target="_blank" rel="noopener">tokenization&lt;/a>,
-&lt;a href="https://en.wikipedia.org/wiki/Stemming" target="_blank" rel="noopener">stemming&lt;/a>, etc, so that you don&amp;rsquo;t have to write wildcard
-&lt;a href="https://en.wikipedia.org/wiki/Regular_expression" target="_blank" rel="noopener">regular expressions&lt;/a> all the time? I&amp;rsquo;ve also shared that question and on a one nice day, I&amp;rsquo;ve tried to scratch that itch by exposing the
-&lt;a href="https://lucene.apache.org/" target="_blank" rel="noopener">Lucene&lt;/a> query syntax as a CLI utility. &lt;code>lmgep&lt;/code> is the result of my effort.
-&lt;a href="https://github.com/dainiusjocas/lucene-grep" target="_blank" rel="noopener">Give it a try&lt;/a> and let me know how it goes.&lt;/p>
+&lt;p>Have you ever wished that &lt;code>grep&lt;/code> supported &lt;a href="https://en.wikipedia.org/wiki/Text_segmentation#Word_segmentation">tokenization&lt;/a>, &lt;a href="https://en.wikipedia.org/wiki/Stemming">stemming&lt;/a>, etc, so that you don&amp;rsquo;t have to write wildcard &lt;a href="https://en.wikipedia.org/wiki/Regular_expression">regular expressions&lt;/a> all the time? I&amp;rsquo;ve also shared that question and on a one nice day, I&amp;rsquo;ve tried to scratch that itch by exposing the &lt;a href="https://lucene.apache.org/">Lucene&lt;/a> query syntax as a CLI utility. &lt;code>lmgep&lt;/code> is the result of my effort. &lt;a href="https://github.com/dainiusjocas/lucene-grep">Give it a try&lt;/a> and let me know how it goes.&lt;/p>
 &lt;h2 id="full-text-search-vs-grep">Full-text Search vs. &lt;code>grep&lt;/code>&lt;/h2>
 &lt;p>I&amp;rsquo;m perfectly aware that comparing Lucene and &lt;code>grep&lt;/code> is like comparing apples to oranges. However, I think that &lt;code>lmgrep&lt;/code> is best compared with the very tool that inspired it, namely &lt;code>grep&lt;/code>.&lt;/p>
 &lt;p>Anyway, what does &lt;code>grep&lt;/code> do? &lt;code>grep&lt;/code> reads a line from &lt;code>stdin&lt;/code>, examines the line to see if it should be forwarded to &lt;code>stdout&lt;/code>, and repeats until stdin is exhausted&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. &lt;code>lmgrep&lt;/code> tries to mimick exactly that functionality. Of course, there are many more options to &lt;code>grep&lt;/code> but it is the essence of the tool.&lt;/p>
@@ -17,8 +138,7 @@
 &lt;li>Boolean operators allow to construct complex, well-designed queries;&lt;/li>
 &lt;li>Text analysis can be customized to the language of the documents;&lt;/li>
 &lt;li>Fuzzy text searches;&lt;/li>
-&lt;li>Flexible text analysis pipeline that includes, lowercasing,
-&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-asciifolding-tokenfilter.html" target="_blank" rel="noopener">ASCII-folding&lt;/a>, stemming, etc;&lt;/li>
+&lt;li>Flexible text analysis pipeline that includes, lowercasing, &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-asciifolding-tokenfilter.html">ASCII-folding&lt;/a>, stemming, etc;&lt;/li>
 &lt;li>regular expressions can be combined with other Lucene query components;&lt;/li>
 &lt;li>Search matches can span multiple lines, i.e. search is not line-oriented.&lt;/li>
 &lt;/ul>
@@ -30,31 +150,18 @@
 &lt;/ul>
 &lt;h2 id="why-lucene">Why Lucene?&lt;/h2>
 &lt;p>Lucene is a Java library that provides indexing and search features. Lucene has been more than 20 years in development and it is the library that powers many search applications. Also, many developers are already familiar with the Lucene query syntax and know how to leverage it to solve complicated information retrieval problems.&lt;/p>
-&lt;p>However powerful Lucene is, it is not well-suited for CLI application. The main problem is the startup time of JVM. To reduce the startup time I&amp;rsquo;ve compiled &lt;code>lmgrep&lt;/code> with the &lt;code>native-image&lt;/code> tool provided by
-&lt;a href="https://www.graalvm.org/" target="_blank" rel="noopener">GraalVM&lt;/a>. In this way, the startup time is around 0.01s for Linux, macOS, and Windows.&lt;/p>
+&lt;p>However powerful Lucene is, it is not well-suited for CLI application. The main problem is the startup time of JVM. To reduce the startup time I&amp;rsquo;ve compiled &lt;code>lmgrep&lt;/code> with the &lt;code>native-image&lt;/code> tool provided by &lt;a href="https://www.graalvm.org/">GraalVM&lt;/a>. In this way, the startup time is around 0.01s for Linux, macOS, and Windows.&lt;/p>
 &lt;h2 id="how-does-lmgrep-work">How does &lt;code>lmgrep&lt;/code> work?&lt;/h2>
-&lt;p>&lt;code>lmgrep&lt;/code> by default expects two parameters: a search query and a
-&lt;a href="https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-" target="_blank" rel="noopener">GLOB pattern&lt;/a> (similar to regexp) to find files to execute &lt;code>lmgrep&lt;/code> on. I assume that the dear reader doesn&amp;rsquo;t want to be tortured by reading the explanation on how the file names are being matched with GLOB, so I&amp;rsquo;ll skip it. Instead, I&amp;rsquo;ll focus on explaining how the search works within a file.&lt;/p>
-&lt;p>&lt;code>lmgrep&lt;/code> creates a
-&lt;a href="https://lucene.apache.org/core/8_7_0/monitor/org/apache/lucene/monitor/Monitor.html" target="_blank" rel="noopener">Lucene Monitor (Monitor)&lt;/a> object from the provided search query. Then text file is split into lines&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Each line of text is passed to the Monitor for searching. The Monitor then creates an in-memory Lucene index with a single document created out of the line of text. Then the Monitor runs the search query on that in-memory index in the good ol' Lucene way&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>. &lt;code>lmgrep&lt;/code> takes the hits, formats them, and sends results to &lt;code>STDOUT&lt;/code>. That is how &lt;code>lmgrep&lt;/code> does the full-text search.&lt;/p>
-&lt;p>The overall searching approach is similar to the one of
-&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-percolate-query.html" target="_blank" rel="noopener">Percolator&lt;/a> in Elasticsearch. &lt;code>lmgrep&lt;/code> just limits the number of stored search queries to one and treats every text line as a document. A cool thing compared with the Percolator is that &lt;code>lmgrep&lt;/code> provides exact offsets of the matched terms while Elasticsearch does not expose offsets when highlighting.&lt;/p>
-&lt;p>The described procedure seems to be somewhat inefficient. However, the &lt;strong>query parsing&lt;/strong> for &lt;strong>all&lt;/strong> the lines (and files) is done only once. Also, the searching itself is efficient thanks to Lucene in general and when queries are complicated thanks to the
-&lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Presearcher.html" target="_blank" rel="noopener">Presearcher&lt;/a> of the Lucene Monitor in particular. Presearcher extracts terms from the search query and if none of these terms are in the index then a full query is not executed at all. Of course, many optimizations can be (and will be) implemented for &lt;code>lmgrep&lt;/code> such as batching of the documents. In general, the performance is limited by the Lucene Monitor.&lt;/p>
-&lt;p>What about the text analysis pipeline? By default, &lt;code>lmgrep&lt;/code> uses the &lt;code>StandardTokenizer&lt;/code> to tokenize text. Then the tokens are passed through several token filters in the following order: &lt;code>LowerCaseFilter&lt;/code>, &lt;code>ASCIIFoldingFilter&lt;/code>, and &lt;code>SnowballFilter&lt;/code> which is given the &lt;code>EnglishStemmer&lt;/code>. The same analysis pipeline is used for both the indexing and querying. All the components of the analysis pipeline are configurable via CLI flags, see the
-&lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/main/README.md#supported-tokenizers" target="_blank" rel="noopener">README&lt;/a>. However, the order of the token filters, as of now, is not configurable. Moreover, various filters are not exposed at all (e.g. &lt;code>StopwordsFilter&lt;/code>, or
-&lt;a href="https://lucene.apache.org/core/7_4_0/analyzers-common/org/apache/lucene/analysis/miscellaneous/WordDelimiterGraphFilter.html" target="_blank" rel="noopener">WordDelimiterGraphFilter&lt;/a>, etc.). Supporting a more flexible analysis pipeline configuration is left out for future releases. The more users the tool has the faster new features will be implemented ;)&lt;/p>
+&lt;p>&lt;code>lmgrep&lt;/code> by default expects two parameters: a search query and a &lt;a href="https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-">GLOB pattern&lt;/a> (similar to regexp) to find files to execute &lt;code>lmgrep&lt;/code> on. I assume that the dear reader doesn&amp;rsquo;t want to be tortured by reading the explanation on how the file names are being matched with GLOB, so I&amp;rsquo;ll skip it. Instead, I&amp;rsquo;ll focus on explaining how the search works within a file.&lt;/p>
+&lt;p>&lt;code>lmgrep&lt;/code> creates a &lt;a href="https://lucene.apache.org/core/8_7_0/monitor/org/apache/lucene/monitor/Monitor.html">Lucene Monitor (Monitor)&lt;/a> object from the provided search query. Then text file is split into lines&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Each line of text is passed to the Monitor for searching. The Monitor then creates an in-memory Lucene index with a single document created out of the line of text. Then the Monitor runs the search query on that in-memory index in the good ol' Lucene way&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>. &lt;code>lmgrep&lt;/code> takes the hits, formats them, and sends results to &lt;code>STDOUT&lt;/code>. That is how &lt;code>lmgrep&lt;/code> does the full-text search.&lt;/p>
+&lt;p>The overall searching approach is similar to the one of &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-percolate-query.html">Percolator&lt;/a> in Elasticsearch. &lt;code>lmgrep&lt;/code> just limits the number of stored search queries to one and treats every text line as a document. A cool thing compared with the Percolator is that &lt;code>lmgrep&lt;/code> provides exact offsets of the matched terms while Elasticsearch does not expose offsets when highlighting.&lt;/p>
+&lt;p>The described procedure seems to be somewhat inefficient. However, the &lt;strong>query parsing&lt;/strong> for &lt;strong>all&lt;/strong> the lines (and files) is done only once. Also, the searching itself is efficient thanks to Lucene in general and when queries are complicated thanks to the &lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Presearcher.html">Presearcher&lt;/a> of the Lucene Monitor in particular. Presearcher extracts terms from the search query and if none of these terms are in the index then a full query is not executed at all. Of course, many optimizations can be (and will be) implemented for &lt;code>lmgrep&lt;/code> such as batching of the documents. In general, the performance is limited by the Lucene Monitor.&lt;/p>
+&lt;p>What about the text analysis pipeline? By default, &lt;code>lmgrep&lt;/code> uses the &lt;code>StandardTokenizer&lt;/code> to tokenize text. Then the tokens are passed through several token filters in the following order: &lt;code>LowerCaseFilter&lt;/code>, &lt;code>ASCIIFoldingFilter&lt;/code>, and &lt;code>SnowballFilter&lt;/code> which is given the &lt;code>EnglishStemmer&lt;/code>. The same analysis pipeline is used for both the indexing and querying. All the components of the analysis pipeline are configurable via CLI flags, see the &lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/main/README.md#supported-tokenizers">README&lt;/a>. However, the order of the token filters, as of now, is not configurable. Moreover, various filters are not exposed at all (e.g. &lt;code>StopwordsFilter&lt;/code>, or &lt;a href="https://lucene.apache.org/core/7_4_0/analyzers-common/org/apache/lucene/analysis/miscellaneous/WordDelimiterGraphFilter.html">WordDelimiterGraphFilter&lt;/a>, etc.). Supporting a more flexible analysis pipeline configuration is left out for future releases. The more users the tool has the faster new features will be implemented ;)&lt;/p>
 &lt;h2 id="prehistory-of-the-lmgrep">Prehistory of the &lt;code>lmgrep&lt;/code>&lt;/h2>
-&lt;p>Almost every NLP project that I&amp;rsquo;ve worked on had the component called &lt;strong>dictionary annotator&lt;/strong>. Also, the vast majority of the projects used Elasticsearch in one way or another. The more familiar I&amp;rsquo;ve got with Elasticsearch I&amp;rsquo;ve got, the more of my NLP workload shifted towards implementing it inside Elasticsearch. One day I&amp;rsquo;ve discovered a tool called
-&lt;a href="https://github.com/flaxsearch/luwak" target="_blank" rel="noopener">Luwak&lt;/a> (a cool name isn&amp;rsquo;t it?) and read
-&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">more about it&lt;/a>. It kind of opened my eyes: the dictionary annotator can be implemented using Elasticsearch and the dictionary entries can be expressed as Elasticsearch queries. Thankfully, Elasticsearch has Percolator that hides all the complexity of managing temporary indices, batching search requests, etc.&lt;/p>
-&lt;p>Then I was given was an NLP project where one of the requirements was to implement data analysis using AWS serverless stuff: Lambda for text processing and Dynamo DB for storage. Of course, one of the required NLP components was a dictionary annotator. Since Elasticsearch was not available (because it is not serverless) I still wanted to continue working with dictionary entries as search queries, I&amp;rsquo;ve decided to leverage the Luwak library. From experiences of that project, the
-&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">Beagle&lt;/a> library was born. &lt;code>lmgrep&lt;/code> is loosely based on Beagle.&lt;/p>
-&lt;p>When thinking about how to implement &lt;code>lmgrep&lt;/code> I wanted it to be based on Lucene because of the full-text search features. To provide a good experience the start-up time must be small. To achieve it, &lt;code>lmgrep&lt;/code> had to be compiled with the &lt;code>native-image&lt;/code> tool of the GraalVM. I&amp;rsquo;ve tried but the &lt;code>native-image&lt;/code> doesn&amp;rsquo;t support
-&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">Method Handles&lt;/a> that Lucene uses. Some more hacking was needed. I was lucky when I&amp;rsquo;ve discovered a
-&lt;a href="https://web.archive.org/web/2/https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/" target="_blank" rel="noopener">toy project&lt;/a> where the blog search was implemented on AWS Lambda that was backed by Lucene which was compiled by the &lt;code>native-image&lt;/code> tool. I&amp;rsquo;ve cloned the repo, &lt;code>mvnw install&lt;/code>, then included the artefacts to the dependencies list, and &lt;code>lmgrep&lt;/code> compiled with the &lt;code>native-image&lt;/code> tool successfully.&lt;/p>
-&lt;p>Then the most complicated part was to prepare executable binaries for different operating systems. Plenty of CPU, RAM, VirtualBox with Windows and macOS virtual machines, and
-&lt;a href="https://github.com/dainiusjocas/lucene-grep/releases/tag/v2021.01.24" target="_blank" rel="noopener">here we go&lt;/a>.&lt;/p>
+&lt;p>Almost every NLP project that I&amp;rsquo;ve worked on had the component called &lt;strong>dictionary annotator&lt;/strong>. Also, the vast majority of the projects used Elasticsearch in one way or another. The more familiar I&amp;rsquo;ve got with Elasticsearch I&amp;rsquo;ve got, the more of my NLP workload shifted towards implementing it inside Elasticsearch. One day I&amp;rsquo;ve discovered a tool called &lt;a href="https://github.com/flaxsearch/luwak">Luwak&lt;/a> (a cool name isn&amp;rsquo;t it?) and read &lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/">more about it&lt;/a>. It kind of opened my eyes: the dictionary annotator can be implemented using Elasticsearch and the dictionary entries can be expressed as Elasticsearch queries. Thankfully, Elasticsearch has Percolator that hides all the complexity of managing temporary indices, batching search requests, etc.&lt;/p>
+&lt;p>Then I was given was an NLP project where one of the requirements was to implement data analysis using AWS serverless stuff: Lambda for text processing and Dynamo DB for storage. Of course, one of the required NLP components was a dictionary annotator. Since Elasticsearch was not available (because it is not serverless) I still wanted to continue working with dictionary entries as search queries, I&amp;rsquo;ve decided to leverage the Luwak library. From experiences of that project, the &lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/">Beagle&lt;/a> library was born. &lt;code>lmgrep&lt;/code> is loosely based on Beagle.&lt;/p>
+&lt;p>When thinking about how to implement &lt;code>lmgrep&lt;/code> I wanted it to be based on Lucene because of the full-text search features. To provide a good experience the start-up time must be small. To achieve it, &lt;code>lmgrep&lt;/code> had to be compiled with the &lt;code>native-image&lt;/code> tool of the GraalVM. I&amp;rsquo;ve tried but the &lt;code>native-image&lt;/code> doesn&amp;rsquo;t support &lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/">Method Handles&lt;/a> that Lucene uses. Some more hacking was needed. I was lucky when I&amp;rsquo;ve discovered a &lt;a href="https://web.archive.org/web/2/https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/">toy project&lt;/a> where the blog search was implemented on AWS Lambda that was backed by Lucene which was compiled by the &lt;code>native-image&lt;/code> tool. I&amp;rsquo;ve cloned the repo, &lt;code>mvnw install&lt;/code>, then included the artefacts to the dependencies list, and &lt;code>lmgrep&lt;/code> compiled with the &lt;code>native-image&lt;/code> tool successfully.&lt;/p>
+&lt;p>Then the most complicated part was to prepare executable binaries for different operating systems. Plenty of CPU, RAM, VirtualBox with Windows and macOS virtual machines, and &lt;a href="https://github.com/dainiusjocas/lucene-grep/releases/tag/v2021.01.24">here we go&lt;/a>.&lt;/p>
 &lt;p>Did I say how much I enjoyed trying to get stuff done on Windows? None at all. How come that multiple different(!) command prompts are needed to get GraalVM to compile an executable? Now I know that it would a lot better to suffer the pain and to set up the Github Actions pipeline to compile the binaries and upload them to release pages.&lt;/p>
 &lt;h2 id="what-is-missing">What is missing?&lt;/h2>
 &lt;ul>
@@ -67,10 +174,8 @@
 &lt;ul>
 &lt;li>&lt;code>tail&lt;/code> logs to &lt;code>lmgrep&lt;/code> and raise alerts;&lt;/li>
 &lt;li>Give an alias for &lt;code>lmgrep&lt;/code> with various options tailored for the code search (Java Example);&lt;/li>
-&lt;li>Why not expose
-&lt;a href="https://github.com/borkdude/sci" target="_blank" rel="noopener">sci&lt;/a> script as TokenFilter?&lt;/li>
-&lt;li>Why not
-&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenfilter.html" target="_blank" rel="noopener">ngrams token filter&lt;/a> then the search would be resilient to the typing errors?&lt;/li>
+&lt;li>Why not expose &lt;a href="https://github.com/borkdude/sci">sci&lt;/a> script as TokenFilter?&lt;/li>
+&lt;li>Why not &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenfilter.html">ngrams token filter&lt;/a> then the search would be resilient to the typing errors?&lt;/li>
 &lt;li>Static website search, like AWS Lambda that has lmgrep and goes through all files on demand without upfront indexing.&lt;/li>
 &lt;/ul>
 &lt;h2 id="summary">Summary&lt;/h2>

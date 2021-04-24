@@ -37,8 +37,7 @@ echo "Dogs and CATS" | lmgrep \
       }
     ]
   }'
-=>
-["dog","and","cat"]
+# => ["dog","and","cat"]
 ```
 
 ## Text Analysis
@@ -95,8 +94,7 @@ echo "<p>foo bars baz</p>" | \
     ]
   }
   '
-=>
-["BAR","BAR","BAZ"]
+# => ["BAR","BAR","BAZ"]
 ```
 
 Again, nothing special here, read the docs[^1] of an interesting text analysis component, e.g. 
@@ -130,8 +128,7 @@ When the flag is specified then `lmgrep` just outputs a list of tokens that is p
 
 ```shell
 echo "the quick brown fox" | lmgrep --only-analyze
-=>
-["the","quick","brown","fox"]
+# => ["the","quick","brown","fox"]
 ```
 
 ### Implementation

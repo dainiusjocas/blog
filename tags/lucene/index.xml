@@ -145,6 +145,8 @@ To observe the output of text analysis that involves custom text analysis compon
 &lt;a href="https://www.elastic.co/elasticsearch/" target="_blank" rel="noopener">Elasticsearch&lt;/a> without a need to install any servers or index the files before searching?
 &lt;a href="https://github.com/dainiusjocas/lucene-grep" target="_blank" rel="noopener">&lt;code>lmgrep&lt;/code>&lt;/a> aims to provide you just that.
 It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.&lt;/p>
+&lt;p>See the source code
+&lt;a href="https://github.com/dainiusjocas/lucene-grep" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
 &lt;h2 id="my-motivation">My motivation&lt;/h2>
 &lt;p>Have you ever wished that &lt;code>grep&lt;/code> supported
 &lt;a href="https://en.wikipedia.org/wiki/Text_segmentation#Word_segmentation" target="_blank" rel="noopener">tokenization&lt;/a>,

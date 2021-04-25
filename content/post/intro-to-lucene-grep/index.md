@@ -83,7 +83,7 @@ Did I say how much I enjoyed trying to get stuff done on Windows? None at all. H
 
 ## What is missing?
 
-- [ ] The analysis pipeline is not as flexible as I'd like to;
+- [x] The analysis pipeline is not as flexible as I'd like to (UPDATE 2021-04-24: [implemented](https://github.com/dainiusjocas/lucene-grep/pull/81));
 - [ ] Leverage the multicore CPUs by executing the search in parallel;
 - [ ] Batch documents for matching;
 - [ ] Let me know if any?

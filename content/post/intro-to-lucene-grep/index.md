@@ -27,6 +27,8 @@ What if `grep` supported the functionality of a proper search engine like [Elast
 [`lmgrep`](https://github.com/dainiusjocas/lucene-grep) aims to provide you just that. 
 It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.
 
+See the source code [here](https://github.com/dainiusjocas/lucene-grep).
+
 ## My motivation
 
 Have you ever wished that `grep` supported [tokenization](https://en.wikipedia.org/wiki/Text_segmentation#Word_segmentation), [stemming](https://en.wikipedia.org/wiki/Stemming), etc, so that you don't have to write wildcard [regular expressions](https://en.wikipedia.org/wiki/Regular_expression) all the time? I've also shared that question and on a one nice day, I've tried to scratch that itch by exposing the [Lucene](https://lucene.apache.org/) query syntax as a CLI utility. `lmgep` is the result of my effort. [Give it a try](https://github.com/dainiusjocas/lucene-grep) and let me know how it goes.

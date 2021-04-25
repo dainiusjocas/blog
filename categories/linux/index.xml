@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Linux | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/linux/</link><atom:link href="https://www.jocas.lt/blog/categories/linux/index.xml" rel="self" type="application/rss+xml"/><description>Linux</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 20 Feb 2021 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Linux</title><link>https://www.jocas.lt/blog/categories/linux/</link></image><item><title>Silencing the Lenovo Thinkpad P53 on Linux</title><link>https://www.jocas.lt/blog/post/silencing-p53/</link><pubDate>Sat, 20 Feb 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/silencing-p53/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Linux | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/linux/</link><atom:link href="https://www.jocas.lt/blog/categories/linux/index.xml" rel="self" type="application/rss+xml"/><description>Linux</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 20 Feb 2021 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Linux</title><link>https://www.jocas.lt/blog/categories/linux/</link></image><item><title>Silencing the Lenovo Thinkpad P53 on Linux</title><link>https://www.jocas.lt/blog/post/silencing-p53/</link><pubDate>Sat, 20 Feb 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/silencing-p53/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>Lenovo Thinkpad P53 is a powerful laptop but a regular Linux install is just too loud for me. However, it is just a machine and there must be several control knobs that can make the experience better. In this post, I&amp;rsquo;ll share my setup that makes the laptop to be silent most of the time and performant when needed.&lt;/p>
 &lt;h2 id="the-motivation">The motivation&lt;/h2>
 &lt;p>To get my daily work done I spin many fat JVMs like Elasticsearch, Kafka, GraalVM native-image tool, &lt;code>docker-compose&lt;/code> clusters, virtual machines, etc. To plough through those tasks a year ago (in early 2020) I&amp;rsquo;ve got a top spec&amp;rsquo;ed Lenovo Thinkpad P53 laptop:&lt;/p>
@@ -45,24 +45,29 @@
 &lt;/ul>
 &lt;h3 id="linux-kernel">Linux kernel&lt;/h3>
 &lt;p>I&amp;rsquo;ve installed 5.11 on Ubuntu 20.10 and it shouldn&amp;rsquo;t come to you as a surprise that Nvidia drivers were broken and the install script from the Nvidia website failed. So, a failed experiment.&lt;/p>
-&lt;p>I&amp;rsquo;ve used the &lt;a href="https://ubuntuhandbook.org/index.php/2020/08/mainline-install-latest-kernel-ubuntu-linux-mint/">Mainline tool&lt;/a> to install the kernel.&lt;/p>
+&lt;p>I&amp;rsquo;ve used the
+&lt;a href="https://ubuntuhandbook.org/index.php/2020/08/mainline-install-latest-kernel-ubuntu-linux-mint/" target="_blank" rel="noopener">Mainline tool&lt;/a> to install the kernel.&lt;/p>
 &lt;h3 id="kubuntu-2104">Kubuntu 21.04&lt;/h3>
 &lt;p>When all hope was lost and I was about to go back to Windows for another half a year I got the last thing to try: why not upgrade Kubuntu to 21.04 which is not even in BETA? It would come with a newer kernel and most likely with Nvidia driver support.&lt;/p>
 &lt;p>It came with kernel 5.10 and Nvidia drivers worked. Unfortunately, the second fan was not detected. Another failed experiment.&lt;/p>
 &lt;p>The last hope was to ask Mainline to install kernel 5.11 and pray that Nvidia drivers are fine with it. Install, reboot, and voila: Nvidia driver works, an external monitor is detected (though only when connected with HDMI), and most importantly both fans are detected and controllable! Hurray!&lt;/p>
 &lt;h3 id="fancontrol">Fancontrol&lt;/h3>
-&lt;p>&lt;a href="https://github.com/Maldela/fancontrol-gui">Fancontrol&lt;/a> is a GUI utility that allows you to control and set up fan profiles by adjusting two dots: for example, the temperature at which to start/stop spinning the fans and when to max them out.&lt;/p>
+&lt;p>
+&lt;a href="https://github.com/Maldela/fancontrol-gui" target="_blank" rel="noopener">Fancontrol&lt;/a> is a GUI utility that allows you to control and set up fan profiles by adjusting two dots: for example, the temperature at which to start/stop spinning the fans and when to max them out.&lt;/p>
 &lt;p>&lt;img src="fancontrol-system-settings.png" alt="Fancontrol in KDE System Setting">&lt;/p>
 &lt;p>Note: I&amp;rsquo;ve installed it from the source code.
 Note: there is a standalone GUI but I like the integration into the KDE System Settings.&lt;/p>
 &lt;h3 id="thinkfan">Thinkfan&lt;/h3>
-&lt;p>Check the set up instructions &lt;a href="https://gist.github.com/Yatoom/1c80b8afe7fa47a938d3b667ce234559">here&lt;/a>.&lt;/p>
-&lt;p>There is even the GUI for the &lt;a href="https://github.com/scientifichackers/thinkfan-control-gui">thinkfan&lt;/a>. This will give a window like this:&lt;/p>
+&lt;p>Check the set up instructions
+&lt;a href="https://gist.github.com/Yatoom/1c80b8afe7fa47a938d3b667ce234559" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
+&lt;p>There is even the GUI for the
+&lt;a href="https://github.com/scientifichackers/thinkfan-control-gui" target="_blank" rel="noopener">thinkfan&lt;/a>. This will give a window like this:&lt;/p>
 &lt;p>&lt;img src="thinkfan-gui.png" alt="thinkfan GUI">&lt;/p>
 &lt;p>Note the two lines that starts with &lt;code>Fan&lt;/code>. It means that two Thinkpad fans are detected and controlable.&lt;/p>
 &lt;p>Note that with the &lt;code>thinkfan&lt;/code> it is up to you to write the settings into the file.&lt;/p>
 &lt;h3 id="cpu-power-gui">CPU Power GUI&lt;/h3>
-&lt;p>&lt;a href="https://ubuntuhandbook.org/index.php/2020/11/cpupower-gui-simple-tool-adjust-cpu-frequency/">CPU Power GUI&lt;/a> is a simple graphical utility that allows you to change the frequency limits of your CPU and its governor:
+&lt;p>
+&lt;a href="https://ubuntuhandbook.org/index.php/2020/11/cpupower-gui-simple-tool-adjust-cpu-frequency/" target="_blank" rel="noopener">CPU Power GUI&lt;/a> is a simple graphical utility that allows you to change the frequency limits of your CPU and its governor:
 &lt;img src="cpupower-gui.png" alt="CPU frequency settings">&lt;/p>
 &lt;p>Install it from the official Ubuntu repositories.&lt;/p>
 &lt;pre>&lt;code class="language-bash">sudo apt install cpupower-gui
@@ -70,14 +75,19 @@ Note: there is a standalone GUI but I like the integration into the KDE System S
 &lt;p>The trick here is that high CPU frequency leads to lots of heat which in turn spins the fans. When the frequency is limited not that much of the heat is created which prevents fans from kicking in. I&amp;rsquo;ve noticed that the minimal frequency (800 MHz) is enough to get some work done (e.g. zoom call). The temperature rarely goes up more than 60 degrees celsius.&lt;/p>
 &lt;p>Of course, with a limited CPU frequency, the machine is noticeably slower, but hey, it is a high-end CPU. The slowdown is most noticeable when starting up an app. For example, IntelliJ works but feels bad with the 800MHz limit.&lt;/p>
 &lt;h3 id="greenwithenvy">GreenWithEnvy&lt;/h3>
-&lt;p>For the Nvidia fans the &lt;a href="https://gitlab.com/leinardi/gwe">GreenWithEnvy&lt;/a> looks promissing but I guess that the Quadro cards are not supported.&lt;/p>
+&lt;p>For the Nvidia fans the
+&lt;a href="https://gitlab.com/leinardi/gwe" target="_blank" rel="noopener">GreenWithEnvy&lt;/a> looks promissing but I guess that the Quadro cards are not supported.&lt;/p>
 &lt;h2 id="summary">Summary&lt;/h2>
-&lt;p>It was a year-long development. Given the current setup, the tasks that are not super demanding can be done on a quiet machine where the only things I hear are my keyboard and the little Marshall Emberton speaker playing my favourite &lt;a href="https://www.youtube.com/watch?v=ZkW-K5RQdzo">Rammstein&lt;/a> &lt;a href="https://www.youtube.com/watch?v=NeQM1c-XCDc">tunes&lt;/a>. When my crazy performance test is set up, I allow the fans to spin at full speed and get the task done as fast as it can.&lt;/p>
+&lt;p>It was a year-long development. Given the current setup, the tasks that are not super demanding can be done on a quiet machine where the only things I hear are my keyboard and the little Marshall Emberton speaker playing my favourite
+&lt;a href="https://www.youtube.com/watch?v=ZkW-K5RQdzo" target="_blank" rel="noopener">Rammstein&lt;/a>
+&lt;a href="https://www.youtube.com/watch?v=NeQM1c-XCDc" target="_blank" rel="noopener">tunes&lt;/a>. When my crazy performance test is set up, I allow the fans to spin at full speed and get the task done as fast as it can.&lt;/p>
 &lt;h2 id="ps-nvidia-and-linux">P.S. Nvidia and Linux&lt;/h2>
 &lt;p>Yeah, a laptop with an Nvidia GPU should be a red flag that prevents installing Linux in the first place. Of course, there are drivers and stuff, but in general good luck to have them properly working. However, Ubuntu gives you the setup that is worked out and works by default.&lt;/p>
 &lt;p>Also, there are open source drivers called Nouveau but they have problems of their own like external monitor support.&lt;/p>
 &lt;p>What is worse with this P53 is that &lt;strong>ALL&lt;/strong> video outputs are attached to the discrete GPU (what engineers in their right mind would do it?). This means that if drivers are not properly set-up Linux will able to output only 1 FPS while (for some reason) the mouse and some other windows (sometimes?) works without any lag.&lt;/p>
-&lt;p>Sure, things like &lt;a href="https://www.nvidia.com/en-us/geforce/technologies/optimus/technology/">Optimus&lt;/a>, &lt;a href="https://forums.developer.nvidia.com/t/the-all-new-outputsink-feature-aka-reverse-prime/129828">reverse PRIME&lt;/a> exist but I can only wish you good luck setting up these.&lt;/p>
+&lt;p>Sure, things like
+&lt;a href="https://www.nvidia.com/en-us/geforce/technologies/optimus/technology/" target="_blank" rel="noopener">Optimus&lt;/a>,
+&lt;a href="https://forums.developer.nvidia.com/t/the-all-new-outputsink-feature-aka-reverse-prime/129828" target="_blank" rel="noopener">reverse PRIME&lt;/a> exist but I can only wish you good luck setting up these.&lt;/p>
 &lt;p>In summary, I wish there was a modification of the laptop that had only the integrated graphics.&lt;/p>
 &lt;h2 id="pss-setup-on-the-table">P.S.S. Setup on the table&lt;/h2>
 &lt;p>P53 is a big and fat laptop. Since most of the time I work from home due to covid-19, I don&amp;rsquo;t need to move or touch the machine that often. Therefore, it can stand on the table as a &amp;ldquo;triangle&amp;rdquo; (see a picture). This position allows air to circulate a little better. Also, in this way, it takes somewhat less space on the table. On the other hand, I can&amp;rsquo;t use the laptop screen and the keyword.&lt;/p>

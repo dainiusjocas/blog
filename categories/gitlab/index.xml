@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>gitlab | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/gitlab/</link><atom:link href="https://www.jocas.lt/blog/categories/gitlab/index.xml" rel="self" type="application/rss+xml"/><description>gitlab</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Mon, 11 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>gitlab</title><link>https://www.jocas.lt/blog/categories/gitlab/</link></image><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</guid><description>&lt;p>I want to share my hard-won lessons on how to setup the Gitlab CI for Clojure projects based on tools.deps. I think that the Gitlab CI is a wonderful tool for CI workloads. But when you&amp;rsquo;re going a bit sideways from the documented ways of doing things you have to do a bit of discovery for yourself.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>gitlab | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/gitlab/</link><atom:link href="https://www.jocas.lt/blog/categories/gitlab/index.xml" rel="self" type="application/rss+xml"/><description>gitlab</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Mon, 11 Nov 2019 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>gitlab</title><link>https://www.jocas.lt/blog/categories/gitlab/</link></image><item><title>Using Gitlab CI Cache for Clojure Dependencies</title><link>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</link><pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/</guid><description>&lt;p>I want to share my hard-won lessons on how to setup the Gitlab CI for Clojure projects based on tools.deps. I think that the Gitlab CI is a wonderful tool for CI workloads. But when you&amp;rsquo;re going a bit sideways from the documented ways of doing things you have to do a bit of discovery for yourself.&lt;/p>
 &lt;h2 id="gitlab-ci-cachesetup">Gitlab CI Cache Setup&lt;/h2>
 &lt;p>Usually I want to cache dependencies between all build and all branches. To achieve this I hard-code the cache key at the root of the &lt;code>.gitlab-ci.yml&lt;/code> file e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-yaml">cache:
@@ -15,7 +15,8 @@ key: one-key-to-rule-them-all
 paths:
 - ./.m2/repository
 &lt;/code>&lt;/pre>
-&lt;p>When it comes to gitlibs there is no public API for changing the default directory in &lt;code>tools.deps&lt;/code>. But the underlying &lt;code>tools.gitlibs&lt;/code> uses an environment variable to set where to store the &lt;a href="https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23">gitlibs conveniently named &lt;strong>GITLIBS&lt;/strong>&lt;/a>. E.g.&lt;/p>
+&lt;p>When it comes to gitlibs there is no public API for changing the default directory in &lt;code>tools.deps&lt;/code>. But the underlying &lt;code>tools.gitlibs&lt;/code> uses an environment variable to set where to store the
+&lt;a href="https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23" target="_blank" rel="noopener">gitlibs conveniently named &lt;strong>GITLIBS&lt;/strong>&lt;/a>. E.g.&lt;/p>
 &lt;pre>&lt;code class="language-bash">$ (export GITLIBS=&amp;quot;.gitlibs/&amp;quot; &amp;amp;&amp;amp; clojure -A:test)
 &lt;/code>&lt;/pre>
 &lt;p>Of course, we should not forget to configure the cache:&lt;/p>
@@ -34,7 +35,10 @@ paths:
 - ./.m2/repository
 - ./.gitlibs
 &lt;/code>&lt;/pre>
-&lt;p>If you want to disable cache for a particular job (e.g. you&amp;rsquo;re linting with &lt;a href="https://github.com/borkdude/clj-kondo">clj-kondo&lt;/a>, which is delivered as a &lt;a href="https://www.graalvm.org/">GraalVM&lt;/a> compiled &lt;a href="https://www.graalvm.org/docs/reference-manual/native-image/">native image&lt;/a>), just give an empty map for a job&amp;rsquo;s cache setup, e.g.:&lt;/p>
+&lt;p>If you want to disable cache for a particular job (e.g. you&amp;rsquo;re linting with
+&lt;a href="https://github.com/borkdude/clj-kondo" target="_blank" rel="noopener">clj-kondo&lt;/a>, which is delivered as a
+&lt;a href="https://www.graalvm.org/" target="_blank" rel="noopener">GraalVM&lt;/a> compiled
+&lt;a href="https://www.graalvm.org/docs/reference-manual/native-image/" target="_blank" rel="noopener">native image&lt;/a>), just give an empty map for a job&amp;rsquo;s cache setup, e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-yaml">lint:
 stage: test
 image: borkdude/clj-kondo
@@ -43,5 +47,7 @@ when: always
 script:
 - clj-kondo --lint src test
 &lt;/code>&lt;/pre>
-&lt;p>I&amp;rsquo;ve used the Gitlab CI cache while working on a streaming-text search library &lt;a href="https://github.com/tokenmill/beagle">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found &lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml">here&lt;/a>.&lt;/p>
+&lt;p>I&amp;rsquo;ve used the Gitlab CI cache while working on a streaming-text search library
+&lt;a href="https://github.com/tokenmill/beagle" target="_blank" rel="noopener">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found
+&lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
 &lt;p>Hope this helps!&lt;/p></description></item></channel></rss>

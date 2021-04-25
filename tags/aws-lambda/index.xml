@@ -1,5 +1,7 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AWS Lambda | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/aws-lambda/</link><atom:link href="https://www.jocas.lt/blog/tags/aws-lambda/index.xml" rel="self" type="application/rss+xml"/><description>AWS Lambda</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 21 Mar 2020 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>AWS Lambda</title><link>https://www.jocas.lt/blog/tags/aws-lambda/</link></image><item><title>Deploy babashka script to AWS Lambda</title><link>https://www.jocas.lt/blog/post/babashka-aws-lambda/</link><pubDate>Sat, 21 Mar 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/babashka-aws-lambda/</guid><description>&lt;p>TL;DR&lt;/p>
-&lt;p>I&amp;rsquo;ve managed to package a simple &lt;a href="https://github.com/borkdude/babashka">babashka&lt;/a> script to an AWS Lambda Custom Runtime. &lt;a href="https://github.com/dainiusjocas/babashka-lambda">Here&lt;/a> is the code, try for yourself.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AWS Lambda | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/aws-lambda/</link><atom:link href="https://www.jocas.lt/blog/tags/aws-lambda/index.xml" rel="self" type="application/rss+xml"/><description>AWS Lambda</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 21 Mar 2020 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>AWS Lambda</title><link>https://www.jocas.lt/blog/tags/aws-lambda/</link></image><item><title>Deploy babashka script to AWS Lambda</title><link>https://www.jocas.lt/blog/post/babashka-aws-lambda/</link><pubDate>Sat, 21 Mar 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/babashka-aws-lambda/</guid><description>&lt;p>TL;DR&lt;/p>
+&lt;p>I&amp;rsquo;ve managed to package a simple
+&lt;a href="https://github.com/borkdude/babashka" target="_blank" rel="noopener">babashka&lt;/a> script to an AWS Lambda Custom Runtime.
+&lt;a href="https://github.com/dainiusjocas/babashka-lambda" target="_blank" rel="noopener">Here&lt;/a> is the code, try for yourself.&lt;/p>
 &lt;h2 id="motivation">Motivation&lt;/h2>
 &lt;p>Wouldn&amp;rsquo;t it be great to deploy little Clojure code snippets to Custom Lambda Runtime? The main benefits would be:&lt;/p>
 &lt;ul>
@@ -8,7 +10,8 @@
 &lt;li>babashka supports scripting with a subset of Clojure, which might do the work for you.&lt;/li>
 &lt;/ul>
 &lt;h2 id="the-plan">The plan&lt;/h2>
-&lt;p>I know what it takes to deploy to Lambda Custom Runtime. Last year I&amp;rsquo;ve created a Clojure project template for deploying &lt;a href="https://github.com/tokenmill/clojure-graalvm-aws-lambda-template">GraalVM compiled AWS Lambda Custom Runtime&lt;/a>. And babashka is just another self contained binary. It should be too hard to bring two things together and get it working? Challenge accepted.&lt;/p>
+&lt;p>I know what it takes to deploy to Lambda Custom Runtime. Last year I&amp;rsquo;ve created a Clojure project template for deploying
+&lt;a href="https://github.com/tokenmill/clojure-graalvm-aws-lambda-template" target="_blank" rel="noopener">GraalVM compiled AWS Lambda Custom Runtime&lt;/a>. And babashka is just another self contained binary. It should be too hard to bring two things together and get it working? Challenge accepted.&lt;/p>
 &lt;h2 id="packaging">Packaging&lt;/h2>
 &lt;p>I like to build software inside Docker containers. In this experiment, for the first attempt I&amp;rsquo;ve used this Dockerfile:&lt;/p>
 &lt;pre>&lt;code>FROM borkdude/babashka:latest as BABASHKA
@@ -27,7 +30,8 @@ RUN zip -q -r function.zip bb cp bootstrap .gitlibs/ .m2/ src/ resources/ deps.e
 &lt;p>Here:&lt;/p>
 &lt;ul>
 &lt;li>copy &lt;code>bb&lt;/code> binary from babashka Docker image,&lt;/li>
-&lt;li>download the dependencies for babashka script using &lt;code>clojure&lt;/code> (both, maven and git dependencies are supported, like is described &lt;a href="https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/">here&lt;/a>),&lt;/li>
+&lt;li>download the dependencies for babashka script using &lt;code>clojure&lt;/code> (both, maven and git dependencies are supported, like is described
+&lt;a href="https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/" target="_blank" rel="noopener">here&lt;/a>),&lt;/li>
 &lt;li>write a classpath to the &lt;code>cp&lt;/code> file,&lt;/li>
 &lt;li>copy all source code,&lt;/li>
 &lt;li>zip the required contents to the &lt;code>function.zip&lt;/code>.&lt;/li>
@@ -45,7 +49,8 @@ RUN zip -q -r function.zip bb cp bootstrap .gitlibs/ .m2/ src/ resources/ deps.e
 &lt;li>&lt;code>src&lt;/code>: directory with babashka scripts&lt;/li>
 &lt;/ul>
 &lt;h2 id="custom-runtime-discoveries">Custom runtime discoveries&lt;/h2>
-&lt;p>Finally, having all dependencies packaged up, I&amp;rsquo;ve deployed the &lt;code>function.zip&lt;/code> to AWS Lambda. The first error message was not very &lt;a href="https://gist.github.com/dainiusjocas/feafeef5653ff2c6e8c7b2d9627a831d">encouraging&lt;/a>:&lt;/p>
+&lt;p>Finally, having all dependencies packaged up, I&amp;rsquo;ve deployed the &lt;code>function.zip&lt;/code> to AWS Lambda. The first error message was not very
+&lt;a href="https://gist.github.com/dainiusjocas/feafeef5653ff2c6e8c7b2d9627a831d" target="_blank" rel="noopener">encouraging&lt;/a>:&lt;/p>
 &lt;pre>&lt;code class="language-text">Util_sun_misc_Signal.ensureInitialized: CSunMiscSignal.create() failed. errno: 38 Function not implemented
 Fatal error: Util_sun_misc_Signal.ensureInitialized: CSunMiscSignal.open() failed.
 JavaFrameAnchor dump:
@@ -224,7 +229,10 @@ RequestId: 263ff1be-425d-4dcb-9ea5-67020dc3041b Error: Runtime exited with error
 Runtime.ExitError
 &lt;/code>&lt;/pre>
 &lt;h2 id="the-fight">The fight&lt;/h2>
-&lt;p>After some Googling I&amp;rsquo;ve discovered several related clues &lt;a href="https://github.com/oracle/graal/issues/841">here&lt;/a> and &lt;a href="https://github.com/quarkusio/quarkus/issues/4262">here&lt;/a>. They say that signals are not supported in AWS lambda. So, why not to disable signals for babashka and see what happens? I&amp;rsquo;ve forked the repo, made a flag that disables PIPE signal handling, deployed babashka to the &lt;a href="https://hub.docker.com/r/dainiusjocas/babashka">docker hub&lt;/a> and tried to deploy lambda once again.&lt;/p>
+&lt;p>After some Googling I&amp;rsquo;ve discovered several related clues
+&lt;a href="https://github.com/oracle/graal/issues/841" target="_blank" rel="noopener">here&lt;/a> and
+&lt;a href="https://github.com/quarkusio/quarkus/issues/4262" target="_blank" rel="noopener">here&lt;/a>. They say that signals are not supported in AWS lambda. So, why not to disable signals for babashka and see what happens? I&amp;rsquo;ve forked the repo, made a flag that disables PIPE signal handling, deployed babashka to the
+&lt;a href="https://hub.docker.com/r/dainiusjocas/babashka" target="_blank" rel="noopener">docker hub&lt;/a> and tried to deploy lambda once again.&lt;/p>
 &lt;p>And? It worked:&lt;/p>
 &lt;pre>&lt;code class="language-shell">make function-name=$(make get-function-name) invoke-function
 =&amp;gt;
@@ -234,12 +242,14 @@ Runtime.ExitError
 }
 &lt;/code>&lt;/pre>
 &lt;h2 id="summary">Summary&lt;/h2>
-&lt;p>&lt;a href="https://github.com/dainiusjocas/babashka-lambda">Here&lt;/a> is the example of babashka script that can be deployed to AWS Lambda.&lt;/p>
+&lt;p>
+&lt;a href="https://github.com/dainiusjocas/babashka-lambda" target="_blank" rel="noopener">Here&lt;/a> is the example of babashka script that can be deployed to AWS Lambda.&lt;/p>
 &lt;ul>
 &lt;li>The &lt;code>function.zip&lt;/code> weights just 18MB.&lt;/li>
 &lt;li>The cold startup of the Lambda that is given 128MB of RAM is ~400ms. Subsequent calls ranges from 4ms and 120ms. The more RAM you give the faster lambda gets.&lt;/li>
 &lt;li>I can develop the code in Cursive as the structure is like of an ordinary Clojure deps.edn project (and it can be used on the JVM).&lt;/li>
-&lt;li>I made a &lt;a href="https://github.com/borkdude/babashka/pull/305">PR to babashka&lt;/a> and I&amp;rsquo;ve got accepted.&lt;/li>
+&lt;li>I made a
+&lt;a href="https://github.com/borkdude/babashka/pull/305" target="_blank" rel="noopener">PR to babashka&lt;/a> and I&amp;rsquo;ve got accepted.&lt;/li>
 &lt;/ul>
 &lt;h2 id="next-steps">Next Steps&lt;/h2>
 &lt;ul>

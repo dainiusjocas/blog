@@ -1,14 +1,21 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Kafka Connect | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/kafka-connect/</link><atom:link href="https://www.jocas.lt/blog/categories/kafka-connect/index.xml" rel="self" type="application/rss+xml"/><description>Kafka Connect</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 03 Oct 2020 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Kafka Connect</title><link>https://www.jocas.lt/blog/categories/kafka-connect/</link></image><item><title>How to Prevent Data Corruption in Elasticsearch When Using Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/kc_es_data_consistency/</link><pubDate>Sat, 03 Oct 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kc_es_data_consistency/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
-&lt;p>When the &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch">Elasticsearch indexer&lt;/a> is highly concurrent, Kafka record keys are used as Elasticsearch document IDs, and indexer is set to delete records on &lt;code>null&lt;/code> values, then Kafka Connect Elasticsearch Sink Connector might corrupt your data: documents that should not be deleted end up being deleted, or documents that should be deleted end up still being present in the index. The fix is to use external versioning for deletes in bulk requests as it is proposed in this &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">Github Pull Request&lt;/a>.&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Kafka Connect | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/kafka-connect/</link><atom:link href="https://www.jocas.lt/blog/categories/kafka-connect/index.xml" rel="self" type="application/rss+xml"/><description>Kafka Connect</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 03 Oct 2020 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Kafka Connect</title><link>https://www.jocas.lt/blog/categories/kafka-connect/</link></image><item><title>How to Prevent Data Corruption in Elasticsearch When Using Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/kc_es_data_consistency/</link><pubDate>Sat, 03 Oct 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kc_es_data_consistency/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
+&lt;p>When the
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch" target="_blank" rel="noopener">Elasticsearch indexer&lt;/a> is highly concurrent, Kafka record keys are used as Elasticsearch document IDs, and indexer is set to delete records on &lt;code>null&lt;/code> values, then Kafka Connect Elasticsearch Sink Connector might corrupt your data: documents that should not be deleted end up being deleted, or documents that should be deleted end up still being present in the index. The fix is to use external versioning for deletes in bulk requests as it is proposed in this
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422" target="_blank" rel="noopener">Github Pull Request&lt;/a>.&lt;/p>
 &lt;h3 id="the-problem">The problem&lt;/h3>
 &lt;p>NOTE: as of version 6.0.0 of the Confluent Platform (last checked on 2020-10-02) the bug that might lead to data corruption is still present.&lt;/p>
 &lt;p>Let&amp;rsquo;s focus on a use case where Kafka record key is used as an Elasticsearch document ID&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. I would consider this to be a proper practice when the documents represent a catalog of things.&lt;/p>
-&lt;p>Elasticsearch uses &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/optimistic-concurrency-control.html">optimistic concurrency control&lt;/a>. The job of this concurrency mechanism is to ensure that older version of the document doesn&amp;rsquo;t override a newer version. By default, order of arrival of the operation is applied, but the behaviour can be overriden in &lt;a href="https://www.elastic.co/blog/elasticsearch-versioning-support">several ways&lt;/a> depending on the version of Elasticsearch. In this post we focus on concurrent bulk requests, and with a concurrency that involves a network, requests will sometimes arrive out of order.&lt;/p>
-&lt;p>To help Elasticsearch resolve the out-of-order indexing requests Kafka Connect Elasticsearch Sink Connector (from here on Kafka Connect for short) leverages the &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L564">&lt;code>external&lt;/code> document&lt;/a> versioning&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Using external versions in Kafka Connect makes sense because we already have versioning in place: Kafka topic partition offsets. If Kafka Connect applies changes to Elasticsearch indices in order of the topic offset, then any update ordering problems would be problems in the upstream system. This is a good guarantee to have.&lt;/p>
-&lt;p>Let&amp;rsquo;s add to the mix delete operations. Kafka Connect supports a setting &lt;code>BEHAVIOR_ON_NULL_VALUES_CONFIG&lt;/code> to &lt;code>&amp;quot;delete&amp;quot;&lt;/code>. This setting instructs the Kafka Connect that a document in Elasticsearch with an ID of the kafka record key with &lt;code>null&lt;/code> value (a tombstone message) is going to be deleted. But for some strange reason the deletes &lt;strong>does not use external versioning&lt;/strong>! The line responsible for the described behaviour&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> can be found &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L554">here&lt;/a>. This means that for deletes the order-of-arrival wins. Let&amp;rsquo;s increase the concurrency of bulk requests with the param &lt;code>MAX_IN_FLIGHT_REQUESTS_CONFIG&lt;/code> to a largish number, and the data consistency problems is just round the corner for data that has some largish update ratio.&lt;/p>
+&lt;p>Elasticsearch uses
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/optimistic-concurrency-control.html" target="_blank" rel="noopener">optimistic concurrency control&lt;/a>. The job of this concurrency mechanism is to ensure that older version of the document doesn&amp;rsquo;t override a newer version. By default, order of arrival of the operation is applied, but the behaviour can be overriden in
+&lt;a href="https://www.elastic.co/blog/elasticsearch-versioning-support" target="_blank" rel="noopener">several ways&lt;/a> depending on the version of Elasticsearch. In this post we focus on concurrent bulk requests, and with a concurrency that involves a network, requests will sometimes arrive out of order.&lt;/p>
+&lt;p>To help Elasticsearch resolve the out-of-order indexing requests Kafka Connect Elasticsearch Sink Connector (from here on Kafka Connect for short) leverages the
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L564" target="_blank" rel="noopener">&lt;code>external&lt;/code> document&lt;/a> versioning&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Using external versions in Kafka Connect makes sense because we already have versioning in place: Kafka topic partition offsets. If Kafka Connect applies changes to Elasticsearch indices in order of the topic offset, then any update ordering problems would be problems in the upstream system. This is a good guarantee to have.&lt;/p>
+&lt;p>Let&amp;rsquo;s add to the mix delete operations. Kafka Connect supports a setting &lt;code>BEHAVIOR_ON_NULL_VALUES_CONFIG&lt;/code> to &lt;code>&amp;quot;delete&amp;quot;&lt;/code>. This setting instructs the Kafka Connect that a document in Elasticsearch with an ID of the kafka record key with &lt;code>null&lt;/code> value (a tombstone message) is going to be deleted. But for some strange reason the deletes &lt;strong>does not use external versioning&lt;/strong>! The line responsible for the described behaviour&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> can be found
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L554" target="_blank" rel="noopener">here&lt;/a>. This means that for deletes the order-of-arrival wins. Let&amp;rsquo;s increase the concurrency of bulk requests with the param &lt;code>MAX_IN_FLIGHT_REQUESTS_CONFIG&lt;/code> to a largish number, and the data consistency problems is just round the corner for data that has some largish update ratio.&lt;/p>
 &lt;p>The issue is even more pronounced when you re-index data into Elasticsearch and you want to do it as fast as possible, which means doing the indexing concurrently.&lt;/p>
 &lt;h3 id="the-example">The Example&lt;/h3>
-&lt;p>The code that demonstrated the faulty behaviour can be found in this &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">Pull Request&lt;/a>.&lt;/p>
+&lt;p>The code that demonstrated the faulty behaviour can be found in this
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422" target="_blank" rel="noopener">Pull Request&lt;/a>.&lt;/p>
 &lt;p>The test case is for testing the case when document should be present in Elasticsearch gets deleted.&lt;/p>
 &lt;p>Let&amp;rsquo;s have a little walk over the code snippet:&lt;/p>
 &lt;pre>&lt;code class="language-java">Collection&amp;lt;SinkRecord&amp;gt; records = new ArrayList&amp;lt;&amp;gt;();
@@ -45,11 +52,14 @@ BEHAVIOR_ON_NULL_VALUES_CONFIG = &amp;quot;delete&amp;quot;
 req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;).setParameter(&amp;quot;version&amp;quot;, record.version);
 }
 &lt;/code>&lt;/pre>
-&lt;p>The full code can be found &lt;a href="ttps://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">here&lt;/a>. Let&amp;rsquo;s hope that Confluent developers will find some time to merge that PR.&lt;/p>
+&lt;p>The full code can be found
+&lt;a href="ttps://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">here&lt;/a>. Let&amp;rsquo;s hope that Confluent developers will find some time to merge that PR.&lt;/p>
 &lt;h3 id="conclusion">Conclusion&lt;/h3>
-&lt;p>Thank you for reading and leave your feedback &lt;a href="https://github.com/dainiusjocas/blog/issues/12">here&lt;/a>.&lt;/p>
+&lt;p>Thank you for reading and leave your feedback
+&lt;a href="https://github.com/dainiusjocas/blog/issues/12" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
 &lt;h3 id="ps">P.S.&lt;/h3>
-&lt;p>Of course, this is not the only situation when data can get &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues">corrupted&lt;/a>, e.g. changing the number of partitions; when you delete the topic, repopulate it with up-to-date data (also, you skip deletes) then restarting the indexing might pretty much nothing, because all the versions are earlier &lt;code>external version&lt;/code> because offsets are smaller.&lt;/p>
+&lt;p>Of course, this is not the only situation when data can get
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues" target="_blank" rel="noopener">corrupted&lt;/a>, e.g. changing the number of partitions; when you delete the topic, repopulate it with up-to-date data (also, you skip deletes) then restarting the indexing might pretty much nothing, because all the versions are earlier &lt;code>external version&lt;/code> because offsets are smaller.&lt;/p>
 &lt;h3 id="heading">&lt;/h3>
 &lt;section class="footnotes" role="doc-endnotes">
 &lt;hr>
@@ -58,17 +68,23 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;p>When Kafka Record keys are not used as Elasticsearch document IDs versioning is not a problem because every Elasticsearch ID is constructed as &lt;code>{topic}+{partition}+{offset}&lt;/code> which creates a new document for every Kafka record, i.e. no versioning is needed. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:2" role="doc-endnote">
-&lt;p>Elasticsearch 7 supports the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-7.0.html#_internal_versioning_is_no_longer_supported_for_optimistic_concurrency_control">external versioning&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>Elasticsearch 7 supports the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-7.0.html#_internal_versioning_is_no_longer_supported_for_optimistic_concurrency_control" target="_blank" rel="noopener">external versioning&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:3" role="doc-endnote">
 &lt;p>Yes, it is a comment, and it means that the developers were not sure whether to use external versioning for delete operations. &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;/ol>
 &lt;/section></description></item><item><title>How to Use Elasticsearch Ingest Pipelines with Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/ingest_pipeline_kafka_connect/</link><pubDate>Sun, 02 Aug 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/ingest_pipeline_kafka_connect/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
-&lt;p>Specify your pipeline with the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings">&lt;code>index.default_pipeline&lt;/code>&lt;/a> setting in the index (or index template) settings.&lt;/p>
+&lt;p>Specify your pipeline with the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings" target="_blank" rel="noopener">&lt;code>index.default_pipeline&lt;/code>&lt;/a> setting in the index (or index template) settings.&lt;/p>
 &lt;h3 id="the-problem">The Problem&lt;/h3>
-&lt;p>We need to index the log data into the &lt;a href="https://www.elastic.co/">Elasticsearch&lt;/a> cluster using a &lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html">Kafka Connect Elasticsearch Sink Connector&lt;/a> &lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>, the data should be split into daily indices, and we need to specify the Elasticsearch ingest pipeline.&lt;/p>
-&lt;p>The &lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/configuration_options.html">documentation of the connector&lt;/a> doesn&amp;rsquo;t mention anything about ingest pipelines. After a quick consultation with the Internet you discover that there is an open &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues/72">issue&lt;/a> that Kafka Connect Elasticsearch Sink Connector doesn&amp;rsquo;t support specifying an Elasticsearch ingest pipeline. WAT?&lt;/p>
+&lt;p>We need to index the log data into the
+&lt;a href="https://www.elastic.co/" target="_blank" rel="noopener">Elasticsearch&lt;/a> cluster using a
+&lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html" target="_blank" rel="noopener">Kafka Connect Elasticsearch Sink Connector&lt;/a> &lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>, the data should be split into daily indices, and we need to specify the Elasticsearch ingest pipeline.&lt;/p>
+&lt;p>The
+&lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/configuration_options.html" target="_blank" rel="noopener">documentation of the connector&lt;/a> doesn&amp;rsquo;t mention anything about ingest pipelines. After a quick consultation with the Internet you discover that there is an open
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues/72" target="_blank" rel="noopener">issue&lt;/a> that Kafka Connect Elasticsearch Sink Connector doesn&amp;rsquo;t support specifying an Elasticsearch ingest pipeline. WAT?&lt;/p>
 &lt;h3 id="the-workaround">The Workaround&lt;/h3>
 &lt;p>Say&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>, our pipeline&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> just renames an attribute, e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-shell">PUT _ingest/pipeline/my_pipeline_id
@@ -86,13 +102,17 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;/code>&lt;/pre>
 &lt;p>The Elasticsearch ingest pipeline for indexing can be specified in several ways:&lt;/p>
 &lt;ol>
-&lt;li>for each index request as a &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/ingest.html">URL parameter&lt;/a>,&lt;/li>
+&lt;li>for each index request as a
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/ingest.html" target="_blank" rel="noopener">URL parameter&lt;/a>,&lt;/li>
 &lt;li>per bulk index request as a URL parameter,&lt;/li>
-&lt;li>for every &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#docs-bulk-api-query-params">bulk index request operation&lt;/a>,&lt;/li>
-&lt;li>index settings (&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings">a dynamic attribute&lt;/a>),&lt;/li>
+&lt;li>for every
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#docs-bulk-api-query-params" target="_blank" rel="noopener">bulk index request operation&lt;/a>,&lt;/li>
+&lt;li>index settings (
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings" target="_blank" rel="noopener">a dynamic attribute&lt;/a>),&lt;/li>
 &lt;li>index template.&lt;/li>
 &lt;/ol>
-&lt;p>First three options are not supported by Kafka Connect. The fourth option is not convenient in our case because the data should be split into time-based (e.g. daily) indices and we don&amp;rsquo;t want to do repetitive tasks&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>. The natural option to follow is to define an &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">index template&lt;/a>. In the index template we can specify the &lt;code>index.default_pipeline&lt;/code> parameter, e.g.&lt;/p>
+&lt;p>First three options are not supported by Kafka Connect. The fourth option is not convenient in our case because the data should be split into time-based (e.g. daily) indices and we don&amp;rsquo;t want to do repetitive tasks&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>. The natural option to follow is to define an
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html" target="_blank" rel="noopener">index template&lt;/a>. In the index template we can specify the &lt;code>index.default_pipeline&lt;/code> parameter, e.g.&lt;/p>
 &lt;pre>&lt;code class="language-shell">PUT _index_template/template_1
 {
 &amp;quot;index_patterns&amp;quot;: [&amp;quot;daily_log*&amp;quot;],
@@ -106,11 +126,14 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;p>Note, that for indexing not to fail, we should create the Elasticsearch ingest pipeline&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup> &lt;strong>before&lt;/strong> setting up the index template.&lt;/p>
 &lt;p>That is it, now when Kafka Connect will create a new daily index the Elasticsearch ingest pipeline is going to be applied to every document without any issues, for free, and in no time.&lt;/p>
 &lt;h3 id="bonus">Bonus&lt;/h3>
-&lt;p>One thing to note is that only one pipeline can be specified for &lt;code>index.default_pipeline&lt;/code> which might sound a bit limiting. A clever trick to overcome that limitation is to use a series of &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/pipeline-processor.html">pipeline processors&lt;/a> that can invoke other pipelines in the specified order, i.e. pipeline of pipelines.&lt;/p>
+&lt;p>One thing to note is that only one pipeline can be specified for &lt;code>index.default_pipeline&lt;/code> which might sound a bit limiting. A clever trick to overcome that limitation is to use a series of
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/pipeline-processor.html" target="_blank" rel="noopener">pipeline processors&lt;/a> that can invoke other pipelines in the specified order, i.e. pipeline of pipelines.&lt;/p>
 &lt;p>Also, there is an index setting called &lt;code>index.final_pipeline&lt;/code> that if specified is going to be executed after all other pipelines.&lt;/p>
-&lt;p>Testing pipelines can be done using the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/simulate-pipeline-api.html">&lt;code>_simulate&lt;/code> API&lt;/a>.&lt;/p>
+&lt;p>Testing pipelines can be done using the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/simulate-pipeline-api.html" target="_blank" rel="noopener">&lt;code>_simulate&lt;/code> API&lt;/a>.&lt;/p>
 &lt;h3 id="fin">Fin&lt;/h3>
-&lt;p>Thanks for reading and leave comments or any other feedback on this blog post in the &lt;a href="https://github.com/dainiusjocas/blog/issues/9">Github issue&lt;/a>. Examples were tested to work with Elasticsearch and Kibana 7.8.1.&lt;/p>
+&lt;p>Thanks for reading and leave comments or any other feedback on this blog post in the
+&lt;a href="https://github.com/dainiusjocas/blog/issues/9" target="_blank" rel="noopener">Github issue&lt;/a>. Examples were tested to work with Elasticsearch and Kibana 7.8.1.&lt;/p>
 &lt;section class="footnotes" role="doc-endnotes">
 &lt;hr>
 &lt;ol>
@@ -118,7 +141,8 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;p>or any other technology that doesn&amp;rsquo;t support, or it is just not possible to specify the Elasticsearch ingest pipeline. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:2" role="doc-endnote">
-&lt;p>yes, I know that the same job can be done with the &lt;a href="https://docs.confluent.io/current/connect/transforms/index.html">Kafka Connect Transformations&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>yes, I know that the same job can be done with the
+&lt;a href="https://docs.confluent.io/current/connect/transforms/index.html" target="_blank" rel="noopener">Kafka Connect Transformations&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:3" role="doc-endnote">
 &lt;p>let&amp;rsquo;s leave out the Kafka Connector setup. &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>

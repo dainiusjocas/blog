@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>tokenization | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/tokenization/</link><atom:link href="https://www.jocas.lt/blog/tags/tokenization/index.xml" rel="self" type="application/rss+xml"/><description>tokenization</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Fri, 23 Apr 2021 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>tokenization</title><link>https://www.jocas.lt/blog/tags/tokenization/</link></image><item><title>lmgrep Text Analysis</title><link>https://www.jocas.lt/blog/post/lucene-text-analysis/</link><pubDate>Fri, 23 Apr 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/lucene-text-analysis/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>tokenization | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/tokenization/</link><atom:link href="https://www.jocas.lt/blog/tags/tokenization/index.xml" rel="self" type="application/rss+xml"/><description>tokenization</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Fri, 23 Apr 2021 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>tokenization</title><link>https://www.jocas.lt/blog/tags/tokenization/</link></image><item><title>lmgrep Text Analysis</title><link>https://www.jocas.lt/blog/post/lucene-text-analysis/</link><pubDate>Fri, 23 Apr 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/lucene-text-analysis/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>&lt;code>lmgrep&lt;/code> provides an easy way to play with various text analysis options.
-Just download the &lt;code>lmgrep&lt;/code> &lt;a href="https://github.com/dainiusjocas/lucene-grep/releases">binary&lt;/a>, run it with &lt;code>--only-analyze&lt;/code>, and observe the list of tokens.&lt;/p>
+Just download the &lt;code>lmgrep&lt;/code>
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/releases" target="_blank" rel="noopener">binary&lt;/a>, run it with &lt;code>--only-analyze&lt;/code>, and observe the list of tokens.&lt;/p>
 &lt;pre>&lt;code class="language-shell">echo &amp;quot;Dogs and CATS&amp;quot; | lmgrep \
 --only-analyze \
 --analysis='
@@ -15,12 +16,14 @@ Just download the &lt;code>lmgrep&lt;/code> &lt;a href="https://github.com/daini
 # =&amp;gt; [&amp;quot;dog&amp;quot;,&amp;quot;and&amp;quot;,&amp;quot;cat&amp;quot;]
 &lt;/code>&lt;/pre>
 &lt;h2 id="text-analysis">Text Analysis&lt;/h2>
-&lt;p>The &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html">Elasticsearch documentation&lt;/a> describes text analysis as:&lt;/p>
+&lt;p>The
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html" target="_blank" rel="noopener">Elasticsearch documentation&lt;/a> describes text analysis as:&lt;/p>
 &lt;blockquote>
 &lt;p>the process of converting unstructured text into a structured format that’s optimized for search.&lt;/p>
 &lt;/blockquote>
 &lt;p>Therefore, to learn how the full-text search works it is important to understand how the text is, well, analyzed.
-The remainder of the post focuses on how text analysis is done in &lt;a href="https://lucene.apache.org/">Lucene&lt;/a> which is the library that powers search engines like Elasticsearch and Solr, and what &lt;code>lmgrep&lt;/code> provides to analyze your text.&lt;/p>
+The remainder of the post focuses on how text analysis is done in
+&lt;a href="https://lucene.apache.org/" target="_blank" rel="noopener">Lucene&lt;/a> which is the library that powers search engines like Elasticsearch and Solr, and what &lt;code>lmgrep&lt;/code> provides to analyze your text.&lt;/p>
 &lt;h1 id="lucene">Lucene&lt;/h1>
 &lt;p>Text analysis in the Lucene land is defined by 3 types of components:&lt;/p>
 &lt;ul>
@@ -31,10 +34,13 @@ The remainder of the post focuses on how text analysis is done in &lt;a href="ht
 &lt;p>The combination of text analysis components makes an &lt;code>Analyzer&lt;/code>.
 You can think that an analyzer is a recipe to convert a string into a list of tokens&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>.&lt;/p>
 &lt;h2 id="lmgrep">&lt;code>lmgrep&lt;/code>&lt;/h2>
-&lt;p>&lt;code>lmgrep&lt;/code> is a search tool that is based on the &lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Monitor.html">Lucene Monitor&lt;/a> library.
+&lt;p>&lt;code>lmgrep&lt;/code> is a search tool that is based on the
+&lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Monitor.html" target="_blank" rel="noopener">Lucene Monitor&lt;/a> library.
 To do the full-text search it needs to do the same thing that likes of Elasticsearch are doing: to analyze text.
-&lt;code>lmgrep&lt;/code> packs many text &lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/analysis-components.md">analysis components&lt;/a>.
-Also, it provides a list of &lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/predefined-analyzers.md">predefined analyzers&lt;/a>.
+&lt;code>lmgrep&lt;/code> packs many text
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/analysis-components.md" target="_blank" rel="noopener">analysis components&lt;/a>.
+Also, it provides a list of
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/predefined-analyzers.md" target="_blank" rel="noopener">predefined analyzers&lt;/a>.
 Nothing special here, the same battle tested and boring Lucene components that gets the job done&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>.&lt;/p>
 &lt;p>However, &lt;code>lmgrep&lt;/code> provides one clever twist to text analysis:
 a way to specify an analyzer using plain data in JSON, e.g.:&lt;/p>
@@ -63,7 +69,8 @@ lmgrep \
 # =&amp;gt; [&amp;quot;BAR&amp;quot;,&amp;quot;BAR&amp;quot;,&amp;quot;BAZ&amp;quot;]
 &lt;/code>&lt;/pre>
 &lt;p>Again, nothing special here, read the docs&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> of an interesting text analysis component, e.g.
-character filter &lt;a href="https://lucene.apache.org/core/8_3_0/analyzers-common/org/apache/lucene/analysis/pattern/PatternReplaceCharFilterFactory.html">&lt;code>patternReplace&lt;/code>&lt;/a>,
+character filter
+&lt;a href="https://lucene.apache.org/core/8_3_0/analyzers-common/org/apache/lucene/analysis/pattern/PatternReplaceCharFilterFactory.html" target="_blank" rel="noopener">&lt;code>patternReplace&lt;/code>&lt;/a>,
 add its config to the &lt;code>--analysis&lt;/code>, and apply it on your text.&lt;/p>
 &lt;p>Conceptually it is very similar to what Elasticsearch or Solr are providing: &lt;code>analysis&lt;/code> part in the index configuration JSON in Elasticsearch, and Solr Schemas in XML.&lt;/p>
 &lt;p>&lt;code>lmgrep&lt;/code> analysis component has this structure:&lt;/p>
@@ -74,12 +81,15 @@ add its config to the &lt;code>--analysis&lt;/code>, and apply it on your text.&
 &lt;li>some components, e.g. &lt;code>stop&lt;/code> token filter, expect a file as an argument.
 To support such components &lt;code>lmgrep&lt;/code> brutally patched Lucene to load data from arbitrary files while preserving the predefined analyzers with, e.g. their custom stop-word files.&lt;/li>
 &lt;li>when a predefined analyzer is provided for text analysis then all other analysis components are silently ignored.&lt;/li>
-&lt;li>predefined analyzers do not support the &lt;code>args&lt;/code> as of &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/82">now&lt;/a>, just the &lt;code>name&lt;/code>.&lt;/li>
-&lt;li>&lt;code>lmgrep&lt;/code> as of now doesn&amp;rsquo;t provide a way to &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/83">share components between analyzers&lt;/a>.&lt;/li>
+&lt;li>predefined analyzers do not support the &lt;code>args&lt;/code> as of
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/82" target="_blank" rel="noopener">now&lt;/a>, just the &lt;code>name&lt;/code>.&lt;/li>
+&lt;li>&lt;code>lmgrep&lt;/code> as of now doesn&amp;rsquo;t provide a way to
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/83" target="_blank" rel="noopener">share components between analyzers&lt;/a>.&lt;/li>
 &lt;/ul>
 &lt;p>That is pretty much all there is to know about how &lt;code>lmgrep&lt;/code> does text analysis. Try it out and let me know how it goes.&lt;/p>
 &lt;h2 id="--only-analyze">&lt;code>--only-analyze&lt;/code>&lt;/h2>
-&lt;p>I like the Elasticsearch&amp;rsquo;s &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html">Analyze API&lt;/a>.
+&lt;p>I like the Elasticsearch&amp;rsquo;s
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html" target="_blank" rel="noopener">Analyze API&lt;/a>.
 It allows me to look at the raw tokens that are either stored in the index or produced out of the search query.&lt;/p>
 &lt;p>To make debugging of &lt;code>lmgrep&lt;/code> easier I wanted to expose something similar to Analyze API. The &lt;code>--only-analyze&lt;/code> flag is my humble attempt to do that.&lt;/p>
 &lt;p>When the flag is specified then &lt;code>lmgrep&lt;/code> just outputs a list of tokens that is produced by applying an analyzer on the input text, e.g.:&lt;/p>
@@ -107,7 +117,10 @@ It allows me to look at the raw tokens that are either stored in the index or pr
 &lt;p>One thing that constantly frustrates me with Elasticsearch&amp;rsquo;s Analysis API is that I can&amp;rsquo;t specify custom char filters, tokenizer, and token filter directly in the body of the request to the Analysis API.
 To observe the output of text analysis that involves custom text analysis components first I have to create an index with an analyzer and then call Analyze API that involves that index. &lt;code>lmgrep&lt;/code> avoids this pain point by allowing to declare text analysis components inline.&lt;/p>
 &lt;h2 id="post-script">Post Script&lt;/h2>
-&lt;p>All this analyzer construction wizardry is possible because of Lucene&amp;rsquo;s &lt;code>AbstractAnalysisFactory&lt;/code> class and features provided by its subclasses. The &lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.html">&lt;code>CustomAnalyzer&lt;/code>&lt;/a> builder exposes methods that expects a &lt;code>Class&lt;/code> as an argument, e.g. &lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.Builder.html#addCharFilter-java.lang.Class-java.util.Map-">&lt;code>addCharFilter&lt;/code>&lt;/a>. The trick here is that, e.g. the class &lt;a href="https://lucene.apache.org/core/7_3_1/analyzers-common/org/apache/lucene/analysis/util/TokenFilterFactory.html">&lt;code>TokenFilterFactory&lt;/code>&lt;/a> provides a method &lt;code>availableTokenFilters&lt;/code> that returns a set of &lt;code>names&lt;/code> of token filters and with those &lt;code>names&lt;/code> you can get a &lt;code>Class&lt;/code> object that can be supplied to &lt;code>CustomAnalyzer&lt;/code> builder methods.&lt;/p>
+&lt;p>All this analyzer construction wizardry is possible because of Lucene&amp;rsquo;s &lt;code>AbstractAnalysisFactory&lt;/code> class and features provided by its subclasses. The
+&lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.html" target="_blank" rel="noopener">&lt;code>CustomAnalyzer&lt;/code>&lt;/a> builder exposes methods that expects a &lt;code>Class&lt;/code> as an argument, e.g.
+&lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.Builder.html#addCharFilter-java.lang.Class-java.util.Map-" target="_blank" rel="noopener">&lt;code>addCharFilter&lt;/code>&lt;/a>. The trick here is that, e.g. the class
+&lt;a href="https://lucene.apache.org/core/7_3_1/analyzers-common/org/apache/lucene/analysis/util/TokenFilterFactory.html" target="_blank" rel="noopener">&lt;code>TokenFilterFactory&lt;/code>&lt;/a> provides a method &lt;code>availableTokenFilters&lt;/code> that returns a set of &lt;code>names&lt;/code> of token filters and with those &lt;code>names&lt;/code> you can get a &lt;code>Class&lt;/code> object that can be supplied to &lt;code>CustomAnalyzer&lt;/code> builder methods.&lt;/p>
 &lt;p>The discovery of available factory classes is based on the classpath analysis, e.g. fetching all classes where name matches a pattern like &lt;code>.*FilterFactory&lt;/code> and are subclasses of a &lt;code>TokenFilterFactory&lt;/code>. However, for the reasons that were beyond my understanding, when I created my own &lt;code>TokenFilterFactory&lt;/code> class it was not discovered by Lucene &lt;code>¯\_(ツ)_/¯&lt;/code>.&lt;/p>
 &lt;p>Yeah, great, but &lt;code>lmgrep&lt;/code> is compiled with the GraalVM &lt;code>native-image&lt;/code> which assumes closed-world and throws the dynamism of the JVM out the window. How then does exactly this TokenFilterFactory-thing-class discovery works? Yes, Native images must include all the classes because at run-time it cannot create classes, but it can be worked around by providing the configuration with the classes that are going to be used at run-time, and those interesting classes can be reflectively discovered at run-time. &lt;code>lmgrep&lt;/code> relies on the Java classes being discoverable at compile-time where the reflection works as expected.&lt;/p>
 &lt;p>To instruct the &lt;code>native-image&lt;/code> to discover the Java classes from Clojure code you can specify the class under the regular &lt;code>def&lt;/code> because to the &lt;code>native-image&lt;/code> &lt;code>def&lt;/code>s look like constants and are &lt;strong>evaluated&lt;/strong> at compiled-time. So, if &lt;code>lmgrep&lt;/code> misses some awesome Lucene token filter, all it takes is to add it to the hashmap under a &lt;code>def&lt;/code>.&lt;/p>
@@ -116,10 +129,12 @@ To observe the output of text analysis that involves custom text analysis compon
 &lt;hr>
 &lt;ol>
 &lt;li id="fn:1" role="doc-endnote">
-&lt;p>&lt;a href="http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html">Lucene TokenStreams are actually graphs&lt;/a> &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>
+&lt;a href="http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html" target="_blank" rel="noopener">Lucene TokenStreams are actually graphs&lt;/a> &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:2" role="doc-endnote">
-&lt;p>If something is missing then let me know by creating an issue &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues">here&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>If something is missing then let me know by creating an issue
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/issues" target="_blank" rel="noopener">here&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:3" role="doc-endnote">
 &lt;p>Just Google for &amp;ldquo;Lucene &amp;lt;COMPONENT_NAME&amp;gt;&amp;rdquo; &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>

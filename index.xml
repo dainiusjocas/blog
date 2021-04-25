@@ -1,6 +1,7 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link><atom:link href="https://www.jocas.lt/blog/index.xml" rel="self" type="application/rss+xml"/><description>Dainius Jocas</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Fri, 23 Apr 2021 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link></image><item><title>lmgrep Text Analysis</title><link>https://www.jocas.lt/blog/post/lucene-text-analysis/</link><pubDate>Fri, 23 Apr 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/lucene-text-analysis/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link><atom:link href="https://www.jocas.lt/blog/index.xml" rel="self" type="application/rss+xml"/><description>Dainius Jocas</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Fri, 23 Apr 2021 00:00:00 +0000</lastBuildDate><image><url>https://www.jocas.lt/blog/images/icon_hu849715217c2cf577e44af3c34605d58b_27848_512x512_fill_lanczos_center_2.png</url><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link></image><item><title>lmgrep Text Analysis</title><link>https://www.jocas.lt/blog/post/lucene-text-analysis/</link><pubDate>Fri, 23 Apr 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/lucene-text-analysis/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>&lt;code>lmgrep&lt;/code> provides an easy way to play with various text analysis options.
-Just download the &lt;code>lmgrep&lt;/code> &lt;a href="https://github.com/dainiusjocas/lucene-grep/releases">binary&lt;/a>, run it with &lt;code>--only-analyze&lt;/code>, and observe the list of tokens.&lt;/p>
+Just download the &lt;code>lmgrep&lt;/code>
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/releases" target="_blank" rel="noopener">binary&lt;/a>, run it with &lt;code>--only-analyze&lt;/code>, and observe the list of tokens.&lt;/p>
 &lt;pre>&lt;code class="language-shell">echo &amp;quot;Dogs and CATS&amp;quot; | lmgrep \
 --only-analyze \
 --analysis='
@@ -15,12 +16,14 @@ Just download the &lt;code>lmgrep&lt;/code> &lt;a href="https://github.com/daini
 # =&amp;gt; [&amp;quot;dog&amp;quot;,&amp;quot;and&amp;quot;,&amp;quot;cat&amp;quot;]
 &lt;/code>&lt;/pre>
 &lt;h2 id="text-analysis">Text Analysis&lt;/h2>
-&lt;p>The &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html">Elasticsearch documentation&lt;/a> describes text analysis as:&lt;/p>
+&lt;p>The
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis.html" target="_blank" rel="noopener">Elasticsearch documentation&lt;/a> describes text analysis as:&lt;/p>
 &lt;blockquote>
 &lt;p>the process of converting unstructured text into a structured format that’s optimized for search.&lt;/p>
 &lt;/blockquote>
 &lt;p>Therefore, to learn how the full-text search works it is important to understand how the text is, well, analyzed.
-The remainder of the post focuses on how text analysis is done in &lt;a href="https://lucene.apache.org/">Lucene&lt;/a> which is the library that powers search engines like Elasticsearch and Solr, and what &lt;code>lmgrep&lt;/code> provides to analyze your text.&lt;/p>
+The remainder of the post focuses on how text analysis is done in
+&lt;a href="https://lucene.apache.org/" target="_blank" rel="noopener">Lucene&lt;/a> which is the library that powers search engines like Elasticsearch and Solr, and what &lt;code>lmgrep&lt;/code> provides to analyze your text.&lt;/p>
 &lt;h1 id="lucene">Lucene&lt;/h1>
 &lt;p>Text analysis in the Lucene land is defined by 3 types of components:&lt;/p>
 &lt;ul>
@@ -31,10 +34,13 @@ The remainder of the post focuses on how text analysis is done in &lt;a href="ht
 &lt;p>The combination of text analysis components makes an &lt;code>Analyzer&lt;/code>.
 You can think that an analyzer is a recipe to convert a string into a list of tokens&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>.&lt;/p>
 &lt;h2 id="lmgrep">&lt;code>lmgrep&lt;/code>&lt;/h2>
-&lt;p>&lt;code>lmgrep&lt;/code> is a search tool that is based on the &lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Monitor.html">Lucene Monitor&lt;/a> library.
+&lt;p>&lt;code>lmgrep&lt;/code> is a search tool that is based on the
+&lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Monitor.html" target="_blank" rel="noopener">Lucene Monitor&lt;/a> library.
 To do the full-text search it needs to do the same thing that likes of Elasticsearch are doing: to analyze text.
-&lt;code>lmgrep&lt;/code> packs many text &lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/analysis-components.md">analysis components&lt;/a>.
-Also, it provides a list of &lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/predefined-analyzers.md">predefined analyzers&lt;/a>.
+&lt;code>lmgrep&lt;/code> packs many text
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/analysis-components.md" target="_blank" rel="noopener">analysis components&lt;/a>.
+Also, it provides a list of
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/v2021.04.23/docs/predefined-analyzers.md" target="_blank" rel="noopener">predefined analyzers&lt;/a>.
 Nothing special here, the same battle tested and boring Lucene components that gets the job done&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>.&lt;/p>
 &lt;p>However, &lt;code>lmgrep&lt;/code> provides one clever twist to text analysis:
 a way to specify an analyzer using plain data in JSON, e.g.:&lt;/p>
@@ -63,7 +69,8 @@ lmgrep \
 # =&amp;gt; [&amp;quot;BAR&amp;quot;,&amp;quot;BAR&amp;quot;,&amp;quot;BAZ&amp;quot;]
 &lt;/code>&lt;/pre>
 &lt;p>Again, nothing special here, read the docs&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> of an interesting text analysis component, e.g.
-character filter &lt;a href="https://lucene.apache.org/core/8_3_0/analyzers-common/org/apache/lucene/analysis/pattern/PatternReplaceCharFilterFactory.html">&lt;code>patternReplace&lt;/code>&lt;/a>,
+character filter
+&lt;a href="https://lucene.apache.org/core/8_3_0/analyzers-common/org/apache/lucene/analysis/pattern/PatternReplaceCharFilterFactory.html" target="_blank" rel="noopener">&lt;code>patternReplace&lt;/code>&lt;/a>,
 add its config to the &lt;code>--analysis&lt;/code>, and apply it on your text.&lt;/p>
 &lt;p>Conceptually it is very similar to what Elasticsearch or Solr are providing: &lt;code>analysis&lt;/code> part in the index configuration JSON in Elasticsearch, and Solr Schemas in XML.&lt;/p>
 &lt;p>&lt;code>lmgrep&lt;/code> analysis component has this structure:&lt;/p>
@@ -74,12 +81,15 @@ add its config to the &lt;code>--analysis&lt;/code>, and apply it on your text.&
 &lt;li>some components, e.g. &lt;code>stop&lt;/code> token filter, expect a file as an argument.
 To support such components &lt;code>lmgrep&lt;/code> brutally patched Lucene to load data from arbitrary files while preserving the predefined analyzers with, e.g. their custom stop-word files.&lt;/li>
 &lt;li>when a predefined analyzer is provided for text analysis then all other analysis components are silently ignored.&lt;/li>
-&lt;li>predefined analyzers do not support the &lt;code>args&lt;/code> as of &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/82">now&lt;/a>, just the &lt;code>name&lt;/code>.&lt;/li>
-&lt;li>&lt;code>lmgrep&lt;/code> as of now doesn&amp;rsquo;t provide a way to &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/83">share components between analyzers&lt;/a>.&lt;/li>
+&lt;li>predefined analyzers do not support the &lt;code>args&lt;/code> as of
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/82" target="_blank" rel="noopener">now&lt;/a>, just the &lt;code>name&lt;/code>.&lt;/li>
+&lt;li>&lt;code>lmgrep&lt;/code> as of now doesn&amp;rsquo;t provide a way to
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/issues/83" target="_blank" rel="noopener">share components between analyzers&lt;/a>.&lt;/li>
 &lt;/ul>
 &lt;p>That is pretty much all there is to know about how &lt;code>lmgrep&lt;/code> does text analysis. Try it out and let me know how it goes.&lt;/p>
 &lt;h2 id="--only-analyze">&lt;code>--only-analyze&lt;/code>&lt;/h2>
-&lt;p>I like the Elasticsearch&amp;rsquo;s &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html">Analyze API&lt;/a>.
+&lt;p>I like the Elasticsearch&amp;rsquo;s
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html" target="_blank" rel="noopener">Analyze API&lt;/a>.
 It allows me to look at the raw tokens that are either stored in the index or produced out of the search query.&lt;/p>
 &lt;p>To make debugging of &lt;code>lmgrep&lt;/code> easier I wanted to expose something similar to Analyze API. The &lt;code>--only-analyze&lt;/code> flag is my humble attempt to do that.&lt;/p>
 &lt;p>When the flag is specified then &lt;code>lmgrep&lt;/code> just outputs a list of tokens that is produced by applying an analyzer on the input text, e.g.:&lt;/p>
@@ -107,7 +117,10 @@ It allows me to look at the raw tokens that are either stored in the index or pr
 &lt;p>One thing that constantly frustrates me with Elasticsearch&amp;rsquo;s Analysis API is that I can&amp;rsquo;t specify custom char filters, tokenizer, and token filter directly in the body of the request to the Analysis API.
 To observe the output of text analysis that involves custom text analysis components first I have to create an index with an analyzer and then call Analyze API that involves that index. &lt;code>lmgrep&lt;/code> avoids this pain point by allowing to declare text analysis components inline.&lt;/p>
 &lt;h2 id="post-script">Post Script&lt;/h2>
-&lt;p>All this analyzer construction wizardry is possible because of Lucene&amp;rsquo;s &lt;code>AbstractAnalysisFactory&lt;/code> class and features provided by its subclasses. The &lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.html">&lt;code>CustomAnalyzer&lt;/code>&lt;/a> builder exposes methods that expects a &lt;code>Class&lt;/code> as an argument, e.g. &lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.Builder.html#addCharFilter-java.lang.Class-java.util.Map-">&lt;code>addCharFilter&lt;/code>&lt;/a>. The trick here is that, e.g. the class &lt;a href="https://lucene.apache.org/core/7_3_1/analyzers-common/org/apache/lucene/analysis/util/TokenFilterFactory.html">&lt;code>TokenFilterFactory&lt;/code>&lt;/a> provides a method &lt;code>availableTokenFilters&lt;/code> that returns a set of &lt;code>names&lt;/code> of token filters and with those &lt;code>names&lt;/code> you can get a &lt;code>Class&lt;/code> object that can be supplied to &lt;code>CustomAnalyzer&lt;/code> builder methods.&lt;/p>
+&lt;p>All this analyzer construction wizardry is possible because of Lucene&amp;rsquo;s &lt;code>AbstractAnalysisFactory&lt;/code> class and features provided by its subclasses. The
+&lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.html" target="_blank" rel="noopener">&lt;code>CustomAnalyzer&lt;/code>&lt;/a> builder exposes methods that expects a &lt;code>Class&lt;/code> as an argument, e.g.
+&lt;a href="https://lucene.apache.org/core/8_3_1/analyzers-common/org/apache/lucene/analysis/custom/CustomAnalyzer.Builder.html#addCharFilter-java.lang.Class-java.util.Map-" target="_blank" rel="noopener">&lt;code>addCharFilter&lt;/code>&lt;/a>. The trick here is that, e.g. the class
+&lt;a href="https://lucene.apache.org/core/7_3_1/analyzers-common/org/apache/lucene/analysis/util/TokenFilterFactory.html" target="_blank" rel="noopener">&lt;code>TokenFilterFactory&lt;/code>&lt;/a> provides a method &lt;code>availableTokenFilters&lt;/code> that returns a set of &lt;code>names&lt;/code> of token filters and with those &lt;code>names&lt;/code> you can get a &lt;code>Class&lt;/code> object that can be supplied to &lt;code>CustomAnalyzer&lt;/code> builder methods.&lt;/p>
 &lt;p>The discovery of available factory classes is based on the classpath analysis, e.g. fetching all classes where name matches a pattern like &lt;code>.*FilterFactory&lt;/code> and are subclasses of a &lt;code>TokenFilterFactory&lt;/code>. However, for the reasons that were beyond my understanding, when I created my own &lt;code>TokenFilterFactory&lt;/code> class it was not discovered by Lucene &lt;code>¯\_(ツ)_/¯&lt;/code>.&lt;/p>
 &lt;p>Yeah, great, but &lt;code>lmgrep&lt;/code> is compiled with the GraalVM &lt;code>native-image&lt;/code> which assumes closed-world and throws the dynamism of the JVM out the window. How then does exactly this TokenFilterFactory-thing-class discovery works? Yes, Native images must include all the classes because at run-time it cannot create classes, but it can be worked around by providing the configuration with the classes that are going to be used at run-time, and those interesting classes can be reflectively discovered at run-time. &lt;code>lmgrep&lt;/code> relies on the Java classes being discoverable at compile-time where the reflection works as expected.&lt;/p>
 &lt;p>To instruct the &lt;code>native-image&lt;/code> to discover the Java classes from Clojure code you can specify the class under the regular &lt;code>def&lt;/code> because to the &lt;code>native-image&lt;/code> &lt;code>def&lt;/code>s look like constants and are &lt;strong>evaluated&lt;/strong> at compiled-time. So, if &lt;code>lmgrep&lt;/code> misses some awesome Lucene token filter, all it takes is to add it to the hashmap under a &lt;code>def&lt;/code>.&lt;/p>
@@ -116,10 +129,12 @@ To observe the output of text analysis that involves custom text analysis compon
 &lt;hr>
 &lt;ol>
 &lt;li id="fn:1" role="doc-endnote">
-&lt;p>&lt;a href="http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html">Lucene TokenStreams are actually graphs&lt;/a> &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>
+&lt;a href="http://blog.mikemccandless.com/2012/04/lucenes-tokenstreams-are-actually.html" target="_blank" rel="noopener">Lucene TokenStreams are actually graphs&lt;/a> &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:2" role="doc-endnote">
-&lt;p>If something is missing then let me know by creating an issue &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues">here&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>If something is missing then let me know by creating an issue
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/issues" target="_blank" rel="noopener">here&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:3" role="doc-endnote">
 &lt;p>Just Google for &amp;ldquo;Lucene &amp;lt;COMPONENT_NAME&amp;gt;&amp;rdquo; &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
@@ -172,24 +187,29 @@ To observe the output of text analysis that involves custom text analysis compon
 &lt;/ul>
 &lt;h3 id="linux-kernel">Linux kernel&lt;/h3>
 &lt;p>I&amp;rsquo;ve installed 5.11 on Ubuntu 20.10 and it shouldn&amp;rsquo;t come to you as a surprise that Nvidia drivers were broken and the install script from the Nvidia website failed. So, a failed experiment.&lt;/p>
-&lt;p>I&amp;rsquo;ve used the &lt;a href="https://ubuntuhandbook.org/index.php/2020/08/mainline-install-latest-kernel-ubuntu-linux-mint/">Mainline tool&lt;/a> to install the kernel.&lt;/p>
+&lt;p>I&amp;rsquo;ve used the
+&lt;a href="https://ubuntuhandbook.org/index.php/2020/08/mainline-install-latest-kernel-ubuntu-linux-mint/" target="_blank" rel="noopener">Mainline tool&lt;/a> to install the kernel.&lt;/p>
 &lt;h3 id="kubuntu-2104">Kubuntu 21.04&lt;/h3>
 &lt;p>When all hope was lost and I was about to go back to Windows for another half a year I got the last thing to try: why not upgrade Kubuntu to 21.04 which is not even in BETA? It would come with a newer kernel and most likely with Nvidia driver support.&lt;/p>
 &lt;p>It came with kernel 5.10 and Nvidia drivers worked. Unfortunately, the second fan was not detected. Another failed experiment.&lt;/p>
 &lt;p>The last hope was to ask Mainline to install kernel 5.11 and pray that Nvidia drivers are fine with it. Install, reboot, and voila: Nvidia driver works, an external monitor is detected (though only when connected with HDMI), and most importantly both fans are detected and controllable! Hurray!&lt;/p>
 &lt;h3 id="fancontrol">Fancontrol&lt;/h3>
-&lt;p>&lt;a href="https://github.com/Maldela/fancontrol-gui">Fancontrol&lt;/a> is a GUI utility that allows you to control and set up fan profiles by adjusting two dots: for example, the temperature at which to start/stop spinning the fans and when to max them out.&lt;/p>
+&lt;p>
+&lt;a href="https://github.com/Maldela/fancontrol-gui" target="_blank" rel="noopener">Fancontrol&lt;/a> is a GUI utility that allows you to control and set up fan profiles by adjusting two dots: for example, the temperature at which to start/stop spinning the fans and when to max them out.&lt;/p>
 &lt;p>&lt;img src="fancontrol-system-settings.png" alt="Fancontrol in KDE System Setting">&lt;/p>
 &lt;p>Note: I&amp;rsquo;ve installed it from the source code.
 Note: there is a standalone GUI but I like the integration into the KDE System Settings.&lt;/p>
 &lt;h3 id="thinkfan">Thinkfan&lt;/h3>
-&lt;p>Check the set up instructions &lt;a href="https://gist.github.com/Yatoom/1c80b8afe7fa47a938d3b667ce234559">here&lt;/a>.&lt;/p>
-&lt;p>There is even the GUI for the &lt;a href="https://github.com/scientifichackers/thinkfan-control-gui">thinkfan&lt;/a>. This will give a window like this:&lt;/p>
+&lt;p>Check the set up instructions
+&lt;a href="https://gist.github.com/Yatoom/1c80b8afe7fa47a938d3b667ce234559" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
+&lt;p>There is even the GUI for the
+&lt;a href="https://github.com/scientifichackers/thinkfan-control-gui" target="_blank" rel="noopener">thinkfan&lt;/a>. This will give a window like this:&lt;/p>
 &lt;p>&lt;img src="thinkfan-gui.png" alt="thinkfan GUI">&lt;/p>
 &lt;p>Note the two lines that starts with &lt;code>Fan&lt;/code>. It means that two Thinkpad fans are detected and controlable.&lt;/p>
 &lt;p>Note that with the &lt;code>thinkfan&lt;/code> it is up to you to write the settings into the file.&lt;/p>
 &lt;h3 id="cpu-power-gui">CPU Power GUI&lt;/h3>
-&lt;p>&lt;a href="https://ubuntuhandbook.org/index.php/2020/11/cpupower-gui-simple-tool-adjust-cpu-frequency/">CPU Power GUI&lt;/a> is a simple graphical utility that allows you to change the frequency limits of your CPU and its governor:
+&lt;p>
+&lt;a href="https://ubuntuhandbook.org/index.php/2020/11/cpupower-gui-simple-tool-adjust-cpu-frequency/" target="_blank" rel="noopener">CPU Power GUI&lt;/a> is a simple graphical utility that allows you to change the frequency limits of your CPU and its governor:
 &lt;img src="cpupower-gui.png" alt="CPU frequency settings">&lt;/p>
 &lt;p>Install it from the official Ubuntu repositories.&lt;/p>
 &lt;pre>&lt;code class="language-bash">sudo apt install cpupower-gui
@@ -197,14 +217,19 @@ Note: there is a standalone GUI but I like the integration into the KDE System S
 &lt;p>The trick here is that high CPU frequency leads to lots of heat which in turn spins the fans. When the frequency is limited not that much of the heat is created which prevents fans from kicking in. I&amp;rsquo;ve noticed that the minimal frequency (800 MHz) is enough to get some work done (e.g. zoom call). The temperature rarely goes up more than 60 degrees celsius.&lt;/p>
 &lt;p>Of course, with a limited CPU frequency, the machine is noticeably slower, but hey, it is a high-end CPU. The slowdown is most noticeable when starting up an app. For example, IntelliJ works but feels bad with the 800MHz limit.&lt;/p>
 &lt;h3 id="greenwithenvy">GreenWithEnvy&lt;/h3>
-&lt;p>For the Nvidia fans the &lt;a href="https://gitlab.com/leinardi/gwe">GreenWithEnvy&lt;/a> looks promissing but I guess that the Quadro cards are not supported.&lt;/p>
+&lt;p>For the Nvidia fans the
+&lt;a href="https://gitlab.com/leinardi/gwe" target="_blank" rel="noopener">GreenWithEnvy&lt;/a> looks promissing but I guess that the Quadro cards are not supported.&lt;/p>
 &lt;h2 id="summary">Summary&lt;/h2>
-&lt;p>It was a year-long development. Given the current setup, the tasks that are not super demanding can be done on a quiet machine where the only things I hear are my keyboard and the little Marshall Emberton speaker playing my favourite &lt;a href="https://www.youtube.com/watch?v=ZkW-K5RQdzo">Rammstein&lt;/a> &lt;a href="https://www.youtube.com/watch?v=NeQM1c-XCDc">tunes&lt;/a>. When my crazy performance test is set up, I allow the fans to spin at full speed and get the task done as fast as it can.&lt;/p>
+&lt;p>It was a year-long development. Given the current setup, the tasks that are not super demanding can be done on a quiet machine where the only things I hear are my keyboard and the little Marshall Emberton speaker playing my favourite
+&lt;a href="https://www.youtube.com/watch?v=ZkW-K5RQdzo" target="_blank" rel="noopener">Rammstein&lt;/a>
+&lt;a href="https://www.youtube.com/watch?v=NeQM1c-XCDc" target="_blank" rel="noopener">tunes&lt;/a>. When my crazy performance test is set up, I allow the fans to spin at full speed and get the task done as fast as it can.&lt;/p>
 &lt;h2 id="ps-nvidia-and-linux">P.S. Nvidia and Linux&lt;/h2>
 &lt;p>Yeah, a laptop with an Nvidia GPU should be a red flag that prevents installing Linux in the first place. Of course, there are drivers and stuff, but in general good luck to have them properly working. However, Ubuntu gives you the setup that is worked out and works by default.&lt;/p>
 &lt;p>Also, there are open source drivers called Nouveau but they have problems of their own like external monitor support.&lt;/p>
 &lt;p>What is worse with this P53 is that &lt;strong>ALL&lt;/strong> video outputs are attached to the discrete GPU (what engineers in their right mind would do it?). This means that if drivers are not properly set-up Linux will able to output only 1 FPS while (for some reason) the mouse and some other windows (sometimes?) works without any lag.&lt;/p>
-&lt;p>Sure, things like &lt;a href="https://www.nvidia.com/en-us/geforce/technologies/optimus/technology/">Optimus&lt;/a>, &lt;a href="https://forums.developer.nvidia.com/t/the-all-new-outputsink-feature-aka-reverse-prime/129828">reverse PRIME&lt;/a> exist but I can only wish you good luck setting up these.&lt;/p>
+&lt;p>Sure, things like
+&lt;a href="https://www.nvidia.com/en-us/geforce/technologies/optimus/technology/" target="_blank" rel="noopener">Optimus&lt;/a>,
+&lt;a href="https://forums.developer.nvidia.com/t/the-all-new-outputsink-feature-aka-reverse-prime/129828" target="_blank" rel="noopener">reverse PRIME&lt;/a> exist but I can only wish you good luck setting up these.&lt;/p>
 &lt;p>In summary, I wish there was a modification of the laptop that had only the integrated graphics.&lt;/p>
 &lt;h2 id="pss-setup-on-the-table">P.S.S. Setup on the table&lt;/h2>
 &lt;p>P53 is a big and fat laptop. Since most of the time I work from home due to covid-19, I don&amp;rsquo;t need to move or touch the machine that often. Therefore, it can stand on the table as a &amp;ldquo;triangle&amp;rdquo; (see a picture). This position allows air to circulate a little better. Also, in this way, it takes somewhat less space on the table. On the other hand, I can&amp;rsquo;t use the laptop screen and the keyword.&lt;/p>
@@ -224,9 +249,17 @@ Note: there is a standalone GUI but I like the integration into the KDE System S
 &lt;/li>
 &lt;/ol>
 &lt;/section></description></item><item><title>lmgrep - Lucene Based grep-like Utility</title><link>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</link><pubDate>Sat, 30 Jan 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/intro-to-lucene-grep/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
-&lt;p>What if &lt;code>grep&lt;/code> supported the functionality of a proper search engine like &lt;a href="https://www.elastic.co/elasticsearch/">Elasticsearch&lt;/a> without a need to install any servers or index the files before searching? &lt;code>lmgrep&lt;/code> aims to provide you just that. It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.&lt;/p>
+&lt;p>What if &lt;code>grep&lt;/code> supported the functionality of a proper search engine like
+&lt;a href="https://www.elastic.co/elasticsearch/" target="_blank" rel="noopener">Elasticsearch&lt;/a> without a need to install any servers or index the files before searching?
+&lt;a href="https://github.com/dainiusjocas/lucene-grep" target="_blank" rel="noopener">&lt;code>lmgrep&lt;/code>&lt;/a> aims to provide you just that.
+It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.&lt;/p>
 &lt;h2 id="my-motivation">My motivation&lt;/h2>
-&lt;p>Have you ever wished that &lt;code>grep&lt;/code> supported &lt;a href="https://en.wikipedia.org/wiki/Text_segmentation#Word_segmentation">tokenization&lt;/a>, &lt;a href="https://en.wikipedia.org/wiki/Stemming">stemming&lt;/a>, etc, so that you don&amp;rsquo;t have to write wildcard &lt;a href="https://en.wikipedia.org/wiki/Regular_expression">regular expressions&lt;/a> all the time? I&amp;rsquo;ve also shared that question and on a one nice day, I&amp;rsquo;ve tried to scratch that itch by exposing the &lt;a href="https://lucene.apache.org/">Lucene&lt;/a> query syntax as a CLI utility. &lt;code>lmgep&lt;/code> is the result of my effort. &lt;a href="https://github.com/dainiusjocas/lucene-grep">Give it a try&lt;/a> and let me know how it goes.&lt;/p>
+&lt;p>Have you ever wished that &lt;code>grep&lt;/code> supported
+&lt;a href="https://en.wikipedia.org/wiki/Text_segmentation#Word_segmentation" target="_blank" rel="noopener">tokenization&lt;/a>,
+&lt;a href="https://en.wikipedia.org/wiki/Stemming" target="_blank" rel="noopener">stemming&lt;/a>, etc, so that you don&amp;rsquo;t have to write wildcard
+&lt;a href="https://en.wikipedia.org/wiki/Regular_expression" target="_blank" rel="noopener">regular expressions&lt;/a> all the time? I&amp;rsquo;ve also shared that question and on a one nice day, I&amp;rsquo;ve tried to scratch that itch by exposing the
+&lt;a href="https://lucene.apache.org/" target="_blank" rel="noopener">Lucene&lt;/a> query syntax as a CLI utility. &lt;code>lmgep&lt;/code> is the result of my effort.
+&lt;a href="https://github.com/dainiusjocas/lucene-grep" target="_blank" rel="noopener">Give it a try&lt;/a> and let me know how it goes.&lt;/p>
 &lt;h2 id="full-text-search-vs-grep">Full-text Search vs. &lt;code>grep&lt;/code>&lt;/h2>
 &lt;p>I&amp;rsquo;m perfectly aware that comparing Lucene and &lt;code>grep&lt;/code> is like comparing apples to oranges. However, I think that &lt;code>lmgrep&lt;/code> is best compared with the very tool that inspired it, namely &lt;code>grep&lt;/code>.&lt;/p>
 &lt;p>Anyway, what does &lt;code>grep&lt;/code> do? &lt;code>grep&lt;/code> reads a line from &lt;code>stdin&lt;/code>, examines the line to see if it should be forwarded to &lt;code>stdout&lt;/code>, and repeats until stdin is exhausted&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. &lt;code>lmgrep&lt;/code> tries to mimick exactly that functionality. Of course, there are many more options to &lt;code>grep&lt;/code> but it is the essence of the tool.&lt;/p>
@@ -236,7 +269,8 @@ Note: there is a standalone GUI but I like the integration into the KDE System S
 &lt;li>Boolean operators allow to construct complex, well-designed queries;&lt;/li>
 &lt;li>Text analysis can be customized to the language of the documents;&lt;/li>
 &lt;li>Fuzzy text searches;&lt;/li>
-&lt;li>Flexible text analysis pipeline that includes, lowercasing, &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-asciifolding-tokenfilter.html">ASCII-folding&lt;/a>, stemming, etc;&lt;/li>
+&lt;li>Flexible text analysis pipeline that includes, lowercasing,
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-asciifolding-tokenfilter.html" target="_blank" rel="noopener">ASCII-folding&lt;/a>, stemming, etc;&lt;/li>
 &lt;li>regular expressions can be combined with other Lucene query components;&lt;/li>
 &lt;li>Search matches can span multiple lines, i.e. search is not line-oriented.&lt;/li>
 &lt;/ul>
@@ -248,22 +282,36 @@ Note: there is a standalone GUI but I like the integration into the KDE System S
 &lt;/ul>
 &lt;h2 id="why-lucene">Why Lucene?&lt;/h2>
 &lt;p>Lucene is a Java library that provides indexing and search features. Lucene has been more than 20 years in development and it is the library that powers many search applications. Also, many developers are already familiar with the Lucene query syntax and know how to leverage it to solve complicated information retrieval problems.&lt;/p>
-&lt;p>However powerful Lucene is, it is not well-suited for CLI application. The main problem is the startup time of JVM. To reduce the startup time I&amp;rsquo;ve compiled &lt;code>lmgrep&lt;/code> with the &lt;code>native-image&lt;/code> tool provided by &lt;a href="https://www.graalvm.org/">GraalVM&lt;/a>. In this way, the startup time is around 0.01s for Linux, macOS, and Windows.&lt;/p>
+&lt;p>However powerful Lucene is, it is not well-suited for CLI application. The main problem is the startup time of JVM. To reduce the startup time I&amp;rsquo;ve compiled &lt;code>lmgrep&lt;/code> with the &lt;code>native-image&lt;/code> tool provided by
+&lt;a href="https://www.graalvm.org/" target="_blank" rel="noopener">GraalVM&lt;/a>. In this way, the startup time is around 0.01s for Linux, macOS, and Windows.&lt;/p>
 &lt;h2 id="how-does-lmgrep-work">How does &lt;code>lmgrep&lt;/code> work?&lt;/h2>
-&lt;p>&lt;code>lmgrep&lt;/code> by default expects two parameters: a search query and a &lt;a href="https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-">GLOB pattern&lt;/a> (similar to regexp) to find files to execute &lt;code>lmgrep&lt;/code> on. I assume that the dear reader doesn&amp;rsquo;t want to be tortured by reading the explanation on how the file names are being matched with GLOB, so I&amp;rsquo;ll skip it. Instead, I&amp;rsquo;ll focus on explaining how the search works within a file.&lt;/p>
-&lt;p>&lt;code>lmgrep&lt;/code> creates a &lt;a href="https://lucene.apache.org/core/8_7_0/monitor/org/apache/lucene/monitor/Monitor.html">Lucene Monitor (Monitor)&lt;/a> object from the provided search query. Then text file is split into lines&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Each line of text is passed to the Monitor for searching. The Monitor then creates an in-memory Lucene index with a single document created out of the line of text. Then the Monitor runs the search query on that in-memory index in the good ol' Lucene way&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>. &lt;code>lmgrep&lt;/code> takes the hits, formats them, and sends results to &lt;code>STDOUT&lt;/code>. That is how &lt;code>lmgrep&lt;/code> does the full-text search.&lt;/p>
-&lt;p>The overall searching approach is similar to the one of &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-percolate-query.html">Percolator&lt;/a> in Elasticsearch. &lt;code>lmgrep&lt;/code> just limits the number of stored search queries to one and treats every text line as a document. A cool thing compared with the Percolator is that &lt;code>lmgrep&lt;/code> provides exact offsets of the matched terms while Elasticsearch does not expose offsets when highlighting.&lt;/p>
-&lt;p>The described procedure seems to be somewhat inefficient. However, the &lt;strong>query parsing&lt;/strong> for &lt;strong>all&lt;/strong> the lines (and files) is done only once. Also, the searching itself is efficient thanks to Lucene in general and when queries are complicated thanks to the &lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Presearcher.html">Presearcher&lt;/a> of the Lucene Monitor in particular. Presearcher extracts terms from the search query and if none of these terms are in the index then a full query is not executed at all. Of course, many optimizations can be (and will be) implemented for &lt;code>lmgrep&lt;/code> such as batching of the documents. In general, the performance is limited by the Lucene Monitor.&lt;/p>
-&lt;p>What about the text analysis pipeline? By default, &lt;code>lmgrep&lt;/code> uses the &lt;code>StandardTokenizer&lt;/code> to tokenize text. Then the tokens are passed through several token filters in the following order: &lt;code>LowerCaseFilter&lt;/code>, &lt;code>ASCIIFoldingFilter&lt;/code>, and &lt;code>SnowballFilter&lt;/code> which is given the &lt;code>EnglishStemmer&lt;/code>. The same analysis pipeline is used for both the indexing and querying. All the components of the analysis pipeline are configurable via CLI flags, see the &lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/main/README.md#supported-tokenizers">README&lt;/a>. However, the order of the token filters, as of now, is not configurable. Moreover, various filters are not exposed at all (e.g. &lt;code>StopwordsFilter&lt;/code>, or &lt;a href="https://lucene.apache.org/core/7_4_0/analyzers-common/org/apache/lucene/analysis/miscellaneous/WordDelimiterGraphFilter.html">WordDelimiterGraphFilter&lt;/a>, etc.). Supporting a more flexible analysis pipeline configuration is left out for future releases. The more users the tool has the faster new features will be implemented ;)&lt;/p>
+&lt;p>&lt;code>lmgrep&lt;/code> by default expects two parameters: a search query and a
+&lt;a href="https://docs.oracle.com/javase/8/docs/api/java/nio/file/FileSystem.html#getPathMatcher-java.lang.String-" target="_blank" rel="noopener">GLOB pattern&lt;/a> (similar to regexp) to find files to execute &lt;code>lmgrep&lt;/code> on. I assume that the dear reader doesn&amp;rsquo;t want to be tortured by reading the explanation on how the file names are being matched with GLOB, so I&amp;rsquo;ll skip it. Instead, I&amp;rsquo;ll focus on explaining how the search works within a file.&lt;/p>
+&lt;p>&lt;code>lmgrep&lt;/code> creates a
+&lt;a href="https://lucene.apache.org/core/8_7_0/monitor/org/apache/lucene/monitor/Monitor.html" target="_blank" rel="noopener">Lucene Monitor (Monitor)&lt;/a> object from the provided search query. Then text file is split into lines&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Each line of text is passed to the Monitor for searching. The Monitor then creates an in-memory Lucene index with a single document created out of the line of text. Then the Monitor runs the search query on that in-memory index in the good ol' Lucene way&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup>. &lt;code>lmgrep&lt;/code> takes the hits, formats them, and sends results to &lt;code>STDOUT&lt;/code>. That is how &lt;code>lmgrep&lt;/code> does the full-text search.&lt;/p>
+&lt;p>The overall searching approach is similar to the one of
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-percolate-query.html" target="_blank" rel="noopener">Percolator&lt;/a> in Elasticsearch. &lt;code>lmgrep&lt;/code> just limits the number of stored search queries to one and treats every text line as a document. A cool thing compared with the Percolator is that &lt;code>lmgrep&lt;/code> provides exact offsets of the matched terms while Elasticsearch does not expose offsets when highlighting.&lt;/p>
+&lt;p>The described procedure seems to be somewhat inefficient. However, the &lt;strong>query parsing&lt;/strong> for &lt;strong>all&lt;/strong> the lines (and files) is done only once. Also, the searching itself is efficient thanks to Lucene in general and when queries are complicated thanks to the
+&lt;a href="https://lucene.apache.org/core/8_2_0/monitor/org/apache/lucene/monitor/Presearcher.html" target="_blank" rel="noopener">Presearcher&lt;/a> of the Lucene Monitor in particular. Presearcher extracts terms from the search query and if none of these terms are in the index then a full query is not executed at all. Of course, many optimizations can be (and will be) implemented for &lt;code>lmgrep&lt;/code> such as batching of the documents. In general, the performance is limited by the Lucene Monitor.&lt;/p>
+&lt;p>What about the text analysis pipeline? By default, &lt;code>lmgrep&lt;/code> uses the &lt;code>StandardTokenizer&lt;/code> to tokenize text. Then the tokens are passed through several token filters in the following order: &lt;code>LowerCaseFilter&lt;/code>, &lt;code>ASCIIFoldingFilter&lt;/code>, and &lt;code>SnowballFilter&lt;/code> which is given the &lt;code>EnglishStemmer&lt;/code>. The same analysis pipeline is used for both the indexing and querying. All the components of the analysis pipeline are configurable via CLI flags, see the
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/main/README.md#supported-tokenizers" target="_blank" rel="noopener">README&lt;/a>. However, the order of the token filters, as of now, is not configurable. Moreover, various filters are not exposed at all (e.g. &lt;code>StopwordsFilter&lt;/code>, or
+&lt;a href="https://lucene.apache.org/core/7_4_0/analyzers-common/org/apache/lucene/analysis/miscellaneous/WordDelimiterGraphFilter.html" target="_blank" rel="noopener">WordDelimiterGraphFilter&lt;/a>, etc.). Supporting a more flexible analysis pipeline configuration is left out for future releases. The more users the tool has the faster new features will be implemented ;)&lt;/p>
 &lt;h2 id="prehistory-of-the-lmgrep">Prehistory of the &lt;code>lmgrep&lt;/code>&lt;/h2>
-&lt;p>Almost every NLP project that I&amp;rsquo;ve worked on had the component called &lt;strong>dictionary annotator&lt;/strong>. Also, the vast majority of the projects used Elasticsearch in one way or another. The more familiar I&amp;rsquo;ve got with Elasticsearch I&amp;rsquo;ve got, the more of my NLP workload shifted towards implementing it inside Elasticsearch. One day I&amp;rsquo;ve discovered a tool called &lt;a href="https://github.com/flaxsearch/luwak">Luwak&lt;/a> (a cool name isn&amp;rsquo;t it?) and read &lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/">more about it&lt;/a>. It kind of opened my eyes: the dictionary annotator can be implemented using Elasticsearch and the dictionary entries can be expressed as Elasticsearch queries. Thankfully, Elasticsearch has Percolator that hides all the complexity of managing temporary indices, batching search requests, etc.&lt;/p>
-&lt;p>Then I was given was an NLP project where one of the requirements was to implement data analysis using AWS serverless stuff: Lambda for text processing and Dynamo DB for storage. Of course, one of the required NLP components was a dictionary annotator. Since Elasticsearch was not available (because it is not serverless) I still wanted to continue working with dictionary entries as search queries, I&amp;rsquo;ve decided to leverage the Luwak library. From experiences of that project, the &lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/">Beagle&lt;/a> library was born. &lt;code>lmgrep&lt;/code> is loosely based on Beagle.&lt;/p>
-&lt;p>When thinking about how to implement &lt;code>lmgrep&lt;/code> I wanted it to be based on Lucene because of the full-text search features. To provide a good experience the start-up time must be small. To achieve it, &lt;code>lmgrep&lt;/code> had to be compiled with the &lt;code>native-image&lt;/code> tool of the GraalVM. I&amp;rsquo;ve tried but the &lt;code>native-image&lt;/code> doesn&amp;rsquo;t support &lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/">Method Handles&lt;/a> that Lucene uses. Some more hacking was needed. I was lucky when I&amp;rsquo;ve discovered a &lt;a href="https://web.archive.org/web/2/https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/">toy project&lt;/a> where the blog search was implemented on AWS Lambda that was backed by Lucene which was compiled by the &lt;code>native-image&lt;/code> tool. I&amp;rsquo;ve cloned the repo, &lt;code>mvnw install&lt;/code>, then included the artefacts to the dependencies list, and &lt;code>lmgrep&lt;/code> compiled with the &lt;code>native-image&lt;/code> tool successfully.&lt;/p>
-&lt;p>Then the most complicated part was to prepare executable binaries for different operating systems. Plenty of CPU, RAM, VirtualBox with Windows and macOS virtual machines, and &lt;a href="https://github.com/dainiusjocas/lucene-grep/releases/tag/v2021.01.24">here we go&lt;/a>.&lt;/p>
+&lt;p>Almost every NLP project that I&amp;rsquo;ve worked on had the component called &lt;strong>dictionary annotator&lt;/strong>. Also, the vast majority of the projects used Elasticsearch in one way or another. The more familiar I&amp;rsquo;ve got with Elasticsearch I&amp;rsquo;ve got, the more of my NLP workload shifted towards implementing it inside Elasticsearch. One day I&amp;rsquo;ve discovered a tool called
+&lt;a href="https://github.com/flaxsearch/luwak" target="_blank" rel="noopener">Luwak&lt;/a> (a cool name isn&amp;rsquo;t it?) and read
+&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">more about it&lt;/a>. It kind of opened my eyes: the dictionary annotator can be implemented using Elasticsearch and the dictionary entries can be expressed as Elasticsearch queries. Thankfully, Elasticsearch has Percolator that hides all the complexity of managing temporary indices, batching search requests, etc.&lt;/p>
+&lt;p>Then I was given was an NLP project where one of the requirements was to implement data analysis using AWS serverless stuff: Lambda for text processing and Dynamo DB for storage. Of course, one of the required NLP components was a dictionary annotator. Since Elasticsearch was not available (because it is not serverless) I still wanted to continue working with dictionary entries as search queries, I&amp;rsquo;ve decided to leverage the Luwak library. From experiences of that project, the
+&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">Beagle&lt;/a> library was born. &lt;code>lmgrep&lt;/code> is loosely based on Beagle.&lt;/p>
+&lt;p>When thinking about how to implement &lt;code>lmgrep&lt;/code> I wanted it to be based on Lucene because of the full-text search features. To provide a good experience the start-up time must be small. To achieve it, &lt;code>lmgrep&lt;/code> had to be compiled with the &lt;code>native-image&lt;/code> tool of the GraalVM. I&amp;rsquo;ve tried but the &lt;code>native-image&lt;/code> doesn&amp;rsquo;t support
+&lt;a href="https://web.archive.org/web/20201124175132/https://www.flax.co.uk/blog/2016/03/08/helping-bloomberg-build-real-time-news-search-engine/" target="_blank" rel="noopener">Method Handles&lt;/a> that Lucene uses. Some more hacking was needed. I was lucky when I&amp;rsquo;ve discovered a
+&lt;a href="https://web.archive.org/web/2/https://www.morling.dev/blog/how-i-built-a-serverless-search-for-my-blog/" target="_blank" rel="noopener">toy project&lt;/a> where the blog search was implemented on AWS Lambda that was backed by Lucene which was compiled by the &lt;code>native-image&lt;/code> tool. I&amp;rsquo;ve cloned the repo, &lt;code>mvnw install&lt;/code>, then included the artefacts to the dependencies list, and &lt;code>lmgrep&lt;/code> compiled with the &lt;code>native-image&lt;/code> tool successfully.&lt;/p>
+&lt;p>Then the most complicated part was to prepare executable binaries for different operating systems. Plenty of CPU, RAM, VirtualBox with Windows and macOS virtual machines, and
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/releases/tag/v2021.01.24" target="_blank" rel="noopener">here we go&lt;/a>.&lt;/p>
 &lt;p>Did I say how much I enjoyed trying to get stuff done on Windows? None at all. How come that multiple different(!) command prompts are needed to get GraalVM to compile an executable? Now I know that it would a lot better to suffer the pain and to set up the Github Actions pipeline to compile the binaries and upload them to release pages.&lt;/p>
 &lt;h2 id="what-is-missing">What is missing?&lt;/h2>
 &lt;ul>
-&lt;li>&lt;input checked="" disabled="" type="checkbox"> The analysis pipeline is not as flexible as I&amp;rsquo;d like to (UPDATE 2021-04-24: &lt;a href="https://github.com/dainiusjocas/lucene-grep/pull/81">implemented&lt;/a>);&lt;/li>
+&lt;li>&lt;input checked="" disabled="" type="checkbox"> The analysis pipeline is not as flexible as I&amp;rsquo;d like to (UPDATE 2021-04-24:
+&lt;a href="https://github.com/dainiusjocas/lucene-grep/pull/81" target="_blank" rel="noopener">implemented&lt;/a>);&lt;/li>
 &lt;li>&lt;input disabled="" type="checkbox"> Leverage the multicore CPUs by executing the search in parallel;&lt;/li>
 &lt;li>&lt;input disabled="" type="checkbox"> Batch documents for matching;&lt;/li>
 &lt;li>&lt;input disabled="" type="checkbox"> Let me know if any?&lt;/li>
@@ -272,8 +320,10 @@ Note: there is a standalone GUI but I like the integration into the KDE System S
 &lt;ul>
 &lt;li>&lt;code>tail&lt;/code> logs to &lt;code>lmgrep&lt;/code> and raise alerts;&lt;/li>
 &lt;li>Give an alias for &lt;code>lmgrep&lt;/code> with various options tailored for the code search (Java Example);&lt;/li>
-&lt;li>Why not expose &lt;a href="https://github.com/borkdude/sci">sci&lt;/a> script as TokenFilter?&lt;/li>
-&lt;li>Why not &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenfilter.html">ngrams token filter&lt;/a> then the search would be resilient to the typing errors?&lt;/li>
+&lt;li>Why not expose
+&lt;a href="https://github.com/borkdude/sci" target="_blank" rel="noopener">sci&lt;/a> script as TokenFilter?&lt;/li>
+&lt;li>Why not
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenfilter.html" target="_blank" rel="noopener">ngrams token filter&lt;/a> then the search would be resilient to the typing errors?&lt;/li>
 &lt;li>Static website search, like AWS Lambda that has lmgrep and goes through all files on demand without upfront indexing.&lt;/li>
 &lt;/ul>
 &lt;h2 id="summary">Summary&lt;/h2>
@@ -298,16 +348,23 @@ Note: there is a standalone GUI but I like the integration into the KDE System S
 &lt;/li>
 &lt;/ol>
 &lt;/section></description></item><item><title>How to Prevent Data Corruption in Elasticsearch When Using Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/kc_es_data_consistency/</link><pubDate>Sat, 03 Oct 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kc_es_data_consistency/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
-&lt;p>When the &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch">Elasticsearch indexer&lt;/a> is highly concurrent, Kafka record keys are used as Elasticsearch document IDs, and indexer is set to delete records on &lt;code>null&lt;/code> values, then Kafka Connect Elasticsearch Sink Connector might corrupt your data: documents that should not be deleted end up being deleted, or documents that should be deleted end up still being present in the index. The fix is to use external versioning for deletes in bulk requests as it is proposed in this &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">Github Pull Request&lt;/a>.&lt;/p>
+&lt;p>When the
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch" target="_blank" rel="noopener">Elasticsearch indexer&lt;/a> is highly concurrent, Kafka record keys are used as Elasticsearch document IDs, and indexer is set to delete records on &lt;code>null&lt;/code> values, then Kafka Connect Elasticsearch Sink Connector might corrupt your data: documents that should not be deleted end up being deleted, or documents that should be deleted end up still being present in the index. The fix is to use external versioning for deletes in bulk requests as it is proposed in this
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422" target="_blank" rel="noopener">Github Pull Request&lt;/a>.&lt;/p>
 &lt;h3 id="the-problem">The problem&lt;/h3>
 &lt;p>NOTE: as of version 6.0.0 of the Confluent Platform (last checked on 2020-10-02) the bug that might lead to data corruption is still present.&lt;/p>
 &lt;p>Let&amp;rsquo;s focus on a use case where Kafka record key is used as an Elasticsearch document ID&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. I would consider this to be a proper practice when the documents represent a catalog of things.&lt;/p>
-&lt;p>Elasticsearch uses &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/optimistic-concurrency-control.html">optimistic concurrency control&lt;/a>. The job of this concurrency mechanism is to ensure that older version of the document doesn&amp;rsquo;t override a newer version. By default, order of arrival of the operation is applied, but the behaviour can be overriden in &lt;a href="https://www.elastic.co/blog/elasticsearch-versioning-support">several ways&lt;/a> depending on the version of Elasticsearch. In this post we focus on concurrent bulk requests, and with a concurrency that involves a network, requests will sometimes arrive out of order.&lt;/p>
-&lt;p>To help Elasticsearch resolve the out-of-order indexing requests Kafka Connect Elasticsearch Sink Connector (from here on Kafka Connect for short) leverages the &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L564">&lt;code>external&lt;/code> document&lt;/a> versioning&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Using external versions in Kafka Connect makes sense because we already have versioning in place: Kafka topic partition offsets. If Kafka Connect applies changes to Elasticsearch indices in order of the topic offset, then any update ordering problems would be problems in the upstream system. This is a good guarantee to have.&lt;/p>
-&lt;p>Let&amp;rsquo;s add to the mix delete operations. Kafka Connect supports a setting &lt;code>BEHAVIOR_ON_NULL_VALUES_CONFIG&lt;/code> to &lt;code>&amp;quot;delete&amp;quot;&lt;/code>. This setting instructs the Kafka Connect that a document in Elasticsearch with an ID of the kafka record key with &lt;code>null&lt;/code> value (a tombstone message) is going to be deleted. But for some strange reason the deletes &lt;strong>does not use external versioning&lt;/strong>! The line responsible for the described behaviour&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> can be found &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L554">here&lt;/a>. This means that for deletes the order-of-arrival wins. Let&amp;rsquo;s increase the concurrency of bulk requests with the param &lt;code>MAX_IN_FLIGHT_REQUESTS_CONFIG&lt;/code> to a largish number, and the data consistency problems is just round the corner for data that has some largish update ratio.&lt;/p>
+&lt;p>Elasticsearch uses
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/optimistic-concurrency-control.html" target="_blank" rel="noopener">optimistic concurrency control&lt;/a>. The job of this concurrency mechanism is to ensure that older version of the document doesn&amp;rsquo;t override a newer version. By default, order of arrival of the operation is applied, but the behaviour can be overriden in
+&lt;a href="https://www.elastic.co/blog/elasticsearch-versioning-support" target="_blank" rel="noopener">several ways&lt;/a> depending on the version of Elasticsearch. In this post we focus on concurrent bulk requests, and with a concurrency that involves a network, requests will sometimes arrive out of order.&lt;/p>
+&lt;p>To help Elasticsearch resolve the out-of-order indexing requests Kafka Connect Elasticsearch Sink Connector (from here on Kafka Connect for short) leverages the
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L564" target="_blank" rel="noopener">&lt;code>external&lt;/code> document&lt;/a> versioning&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. Using external versions in Kafka Connect makes sense because we already have versioning in place: Kafka topic partition offsets. If Kafka Connect applies changes to Elasticsearch indices in order of the topic offset, then any update ordering problems would be problems in the upstream system. This is a good guarantee to have.&lt;/p>
+&lt;p>Let&amp;rsquo;s add to the mix delete operations. Kafka Connect supports a setting &lt;code>BEHAVIOR_ON_NULL_VALUES_CONFIG&lt;/code> to &lt;code>&amp;quot;delete&amp;quot;&lt;/code>. This setting instructs the Kafka Connect that a document in Elasticsearch with an ID of the kafka record key with &lt;code>null&lt;/code> value (a tombstone message) is going to be deleted. But for some strange reason the deletes &lt;strong>does not use external versioning&lt;/strong>! The line responsible for the described behaviour&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> can be found
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/blob/7256e9473cea690c373058b88fffd1111870cfe6/src/main/java/io/confluent/connect/elasticsearch/jest/JestElasticsearchClient.java#L554" target="_blank" rel="noopener">here&lt;/a>. This means that for deletes the order-of-arrival wins. Let&amp;rsquo;s increase the concurrency of bulk requests with the param &lt;code>MAX_IN_FLIGHT_REQUESTS_CONFIG&lt;/code> to a largish number, and the data consistency problems is just round the corner for data that has some largish update ratio.&lt;/p>
 &lt;p>The issue is even more pronounced when you re-index data into Elasticsearch and you want to do it as fast as possible, which means doing the indexing concurrently.&lt;/p>
 &lt;h3 id="the-example">The Example&lt;/h3>
-&lt;p>The code that demonstrated the faulty behaviour can be found in this &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">Pull Request&lt;/a>.&lt;/p>
+&lt;p>The code that demonstrated the faulty behaviour can be found in this
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422" target="_blank" rel="noopener">Pull Request&lt;/a>.&lt;/p>
 &lt;p>The test case is for testing the case when document should be present in Elasticsearch gets deleted.&lt;/p>
 &lt;p>Let&amp;rsquo;s have a little walk over the code snippet:&lt;/p>
 &lt;pre>&lt;code class="language-java">Collection&amp;lt;SinkRecord&amp;gt; records = new ArrayList&amp;lt;&amp;gt;();
@@ -344,11 +401,14 @@ BEHAVIOR_ON_NULL_VALUES_CONFIG = &amp;quot;delete&amp;quot;
 req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;).setParameter(&amp;quot;version&amp;quot;, record.version);
 }
 &lt;/code>&lt;/pre>
-&lt;p>The full code can be found &lt;a href="ttps://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">here&lt;/a>. Let&amp;rsquo;s hope that Confluent developers will find some time to merge that PR.&lt;/p>
+&lt;p>The full code can be found
+&lt;a href="ttps://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">here&lt;/a>. Let&amp;rsquo;s hope that Confluent developers will find some time to merge that PR.&lt;/p>
 &lt;h3 id="conclusion">Conclusion&lt;/h3>
-&lt;p>Thank you for reading and leave your feedback &lt;a href="https://github.com/dainiusjocas/blog/issues/12">here&lt;/a>.&lt;/p>
+&lt;p>Thank you for reading and leave your feedback
+&lt;a href="https://github.com/dainiusjocas/blog/issues/12" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
 &lt;h3 id="ps">P.S.&lt;/h3>
-&lt;p>Of course, this is not the only situation when data can get &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues">corrupted&lt;/a>, e.g. changing the number of partitions; when you delete the topic, repopulate it with up-to-date data (also, you skip deletes) then restarting the indexing might pretty much nothing, because all the versions are earlier &lt;code>external version&lt;/code> because offsets are smaller.&lt;/p>
+&lt;p>Of course, this is not the only situation when data can get
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues" target="_blank" rel="noopener">corrupted&lt;/a>, e.g. changing the number of partitions; when you delete the topic, repopulate it with up-to-date data (also, you skip deletes) then restarting the indexing might pretty much nothing, because all the versions are earlier &lt;code>external version&lt;/code> because offsets are smaller.&lt;/p>
 &lt;h3 id="heading">&lt;/h3>
 &lt;section class="footnotes" role="doc-endnotes">
 &lt;hr>
@@ -357,17 +417,23 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;p>When Kafka Record keys are not used as Elasticsearch document IDs versioning is not a problem because every Elasticsearch ID is constructed as &lt;code>{topic}+{partition}+{offset}&lt;/code> which creates a new document for every Kafka record, i.e. no versioning is needed. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:2" role="doc-endnote">
-&lt;p>Elasticsearch 7 supports the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-7.0.html#_internal_versioning_is_no_longer_supported_for_optimistic_concurrency_control">external versioning&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>Elasticsearch 7 supports the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/breaking-changes-7.0.html#_internal_versioning_is_no_longer_supported_for_optimistic_concurrency_control" target="_blank" rel="noopener">external versioning&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:3" role="doc-endnote">
 &lt;p>Yes, it is a comment, and it means that the developers were not sure whether to use external versioning for delete operations. &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;/ol>
 &lt;/section></description></item><item><title>How to Use Elasticsearch Ingest Pipelines with Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/ingest_pipeline_kafka_connect/</link><pubDate>Sun, 02 Aug 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/ingest_pipeline_kafka_connect/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
-&lt;p>Specify your pipeline with the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings">&lt;code>index.default_pipeline&lt;/code>&lt;/a> setting in the index (or index template) settings.&lt;/p>
+&lt;p>Specify your pipeline with the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings" target="_blank" rel="noopener">&lt;code>index.default_pipeline&lt;/code>&lt;/a> setting in the index (or index template) settings.&lt;/p>
 &lt;h3 id="the-problem">The Problem&lt;/h3>
-&lt;p>We need to index the log data into the &lt;a href="https://www.elastic.co/">Elasticsearch&lt;/a> cluster using a &lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html">Kafka Connect Elasticsearch Sink Connector&lt;/a> &lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>, the data should be split into daily indices, and we need to specify the Elasticsearch ingest pipeline.&lt;/p>
-&lt;p>The &lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/configuration_options.html">documentation of the connector&lt;/a> doesn&amp;rsquo;t mention anything about ingest pipelines. After a quick consultation with the Internet you discover that there is an open &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues/72">issue&lt;/a> that Kafka Connect Elasticsearch Sink Connector doesn&amp;rsquo;t support specifying an Elasticsearch ingest pipeline. WAT?&lt;/p>
+&lt;p>We need to index the log data into the
+&lt;a href="https://www.elastic.co/" target="_blank" rel="noopener">Elasticsearch&lt;/a> cluster using a
+&lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/index.html" target="_blank" rel="noopener">Kafka Connect Elasticsearch Sink Connector&lt;/a> &lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>, the data should be split into daily indices, and we need to specify the Elasticsearch ingest pipeline.&lt;/p>
+&lt;p>The
+&lt;a href="https://docs.confluent.io/current/connect/kafka-connect-elasticsearch/configuration_options.html" target="_blank" rel="noopener">documentation of the connector&lt;/a> doesn&amp;rsquo;t mention anything about ingest pipelines. After a quick consultation with the Internet you discover that there is an open
+&lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/issues/72" target="_blank" rel="noopener">issue&lt;/a> that Kafka Connect Elasticsearch Sink Connector doesn&amp;rsquo;t support specifying an Elasticsearch ingest pipeline. WAT?&lt;/p>
 &lt;h3 id="the-workaround">The Workaround&lt;/h3>
 &lt;p>Say&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>, our pipeline&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> just renames an attribute, e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-shell">PUT _ingest/pipeline/my_pipeline_id
@@ -385,13 +451,17 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;/code>&lt;/pre>
 &lt;p>The Elasticsearch ingest pipeline for indexing can be specified in several ways:&lt;/p>
 &lt;ol>
-&lt;li>for each index request as a &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/ingest.html">URL parameter&lt;/a>,&lt;/li>
+&lt;li>for each index request as a
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/ingest.html" target="_blank" rel="noopener">URL parameter&lt;/a>,&lt;/li>
 &lt;li>per bulk index request as a URL parameter,&lt;/li>
-&lt;li>for every &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#docs-bulk-api-query-params">bulk index request operation&lt;/a>,&lt;/li>
-&lt;li>index settings (&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings">a dynamic attribute&lt;/a>),&lt;/li>
+&lt;li>for every
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#docs-bulk-api-query-params" target="_blank" rel="noopener">bulk index request operation&lt;/a>,&lt;/li>
+&lt;li>index settings (
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings" target="_blank" rel="noopener">a dynamic attribute&lt;/a>),&lt;/li>
 &lt;li>index template.&lt;/li>
 &lt;/ol>
-&lt;p>First three options are not supported by Kafka Connect. The fourth option is not convenient in our case because the data should be split into time-based (e.g. daily) indices and we don&amp;rsquo;t want to do repetitive tasks&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>. The natural option to follow is to define an &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">index template&lt;/a>. In the index template we can specify the &lt;code>index.default_pipeline&lt;/code> parameter, e.g.&lt;/p>
+&lt;p>First three options are not supported by Kafka Connect. The fourth option is not convenient in our case because the data should be split into time-based (e.g. daily) indices and we don&amp;rsquo;t want to do repetitive tasks&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>. The natural option to follow is to define an
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html" target="_blank" rel="noopener">index template&lt;/a>. In the index template we can specify the &lt;code>index.default_pipeline&lt;/code> parameter, e.g.&lt;/p>
 &lt;pre>&lt;code class="language-shell">PUT _index_template/template_1
 {
 &amp;quot;index_patterns&amp;quot;: [&amp;quot;daily_log*&amp;quot;],
@@ -405,11 +475,14 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;p>Note, that for indexing not to fail, we should create the Elasticsearch ingest pipeline&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup> &lt;strong>before&lt;/strong> setting up the index template.&lt;/p>
 &lt;p>That is it, now when Kafka Connect will create a new daily index the Elasticsearch ingest pipeline is going to be applied to every document without any issues, for free, and in no time.&lt;/p>
 &lt;h3 id="bonus">Bonus&lt;/h3>
-&lt;p>One thing to note is that only one pipeline can be specified for &lt;code>index.default_pipeline&lt;/code> which might sound a bit limiting. A clever trick to overcome that limitation is to use a series of &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/pipeline-processor.html">pipeline processors&lt;/a> that can invoke other pipelines in the specified order, i.e. pipeline of pipelines.&lt;/p>
+&lt;p>One thing to note is that only one pipeline can be specified for &lt;code>index.default_pipeline&lt;/code> which might sound a bit limiting. A clever trick to overcome that limitation is to use a series of
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/pipeline-processor.html" target="_blank" rel="noopener">pipeline processors&lt;/a> that can invoke other pipelines in the specified order, i.e. pipeline of pipelines.&lt;/p>
 &lt;p>Also, there is an index setting called &lt;code>index.final_pipeline&lt;/code> that if specified is going to be executed after all other pipelines.&lt;/p>
-&lt;p>Testing pipelines can be done using the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/simulate-pipeline-api.html">&lt;code>_simulate&lt;/code> API&lt;/a>.&lt;/p>
+&lt;p>Testing pipelines can be done using the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/simulate-pipeline-api.html" target="_blank" rel="noopener">&lt;code>_simulate&lt;/code> API&lt;/a>.&lt;/p>
 &lt;h3 id="fin">Fin&lt;/h3>
-&lt;p>Thanks for reading and leave comments or any other feedback on this blog post in the &lt;a href="https://github.com/dainiusjocas/blog/issues/9">Github issue&lt;/a>. Examples were tested to work with Elasticsearch and Kibana 7.8.1.&lt;/p>
+&lt;p>Thanks for reading and leave comments or any other feedback on this blog post in the
+&lt;a href="https://github.com/dainiusjocas/blog/issues/9" target="_blank" rel="noopener">Github issue&lt;/a>. Examples were tested to work with Elasticsearch and Kibana 7.8.1.&lt;/p>
 &lt;section class="footnotes" role="doc-endnotes">
 &lt;hr>
 &lt;ol>
@@ -417,7 +490,8 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;p>or any other technology that doesn&amp;rsquo;t support, or it is just not possible to specify the Elasticsearch ingest pipeline. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:2" role="doc-endnote">
-&lt;p>yes, I know that the same job can be done with the &lt;a href="https://docs.confluent.io/current/connect/transforms/index.html">Kafka Connect Transformations&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>yes, I know that the same job can be done with the
+&lt;a href="https://docs.confluent.io/current/connect/transforms/index.html" target="_blank" rel="noopener">Kafka Connect Transformations&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;li id="fn:3" role="doc-endnote">
 &lt;p>let&amp;rsquo;s leave out the Kafka Connector setup. &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
@@ -435,7 +509,8 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;h2 id="introduction">Introduction&lt;/h2>
 &lt;p>In Elasticsearch the textual data is represented with two data types: &lt;code>text&lt;/code> and &lt;code>keyword&lt;/code>. The &lt;code>text&lt;/code> type is meant to be used for full-text search use cases while &lt;code>keyword&lt;/code> is mean for filtering, sorting, and aggregation.&lt;/p>
 &lt;h3 id="tldr-about-analyzers">TL;DR About Analyzers&lt;/h3>
-&lt;p>To make a better use of &lt;code>text&lt;/code> data you can setup the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer-anatomy.html">analyzer&lt;/a> which is a combination of three components:&lt;/p>
+&lt;p>To make a better use of &lt;code>text&lt;/code> data you can setup the
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer-anatomy.html" target="_blank" rel="noopener">analyzer&lt;/a> which is a combination of three components:&lt;/p>
 &lt;ul>
 &lt;li>exactly one &lt;strong>tokenizer&lt;/strong>,&lt;/li>
 &lt;li>zero or more &lt;strong>character filters&lt;/strong>,&lt;/li>
@@ -448,7 +523,8 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;li>stopwords are removed with another token filter.&lt;/li>
 &lt;/ul>
 &lt;h3 id="normalizers">Normalizers&lt;/h3>
-&lt;p>The &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-normalizers.html">documentation&lt;/a> says that:&lt;/p>
+&lt;p>The
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-normalizers.html" target="_blank" rel="noopener">documentation&lt;/a> says that:&lt;/p>
 &lt;blockquote>
 &lt;p>Normalizers are similar to analyzers except that they may only emit a single token.&lt;/p>
 &lt;/blockquote>
@@ -642,8 +718,11 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;p>The setup is done in the Kibana Dev Tools with the Elasticsearch 7.7.0.&lt;/p>
 &lt;p>The pattern &lt;code>&amp;quot;/(.+)/.*&amp;quot;&lt;/code> is a bit simplified purely for presentation purposes and doesn&amp;rsquo;t work as expected for URLs with more than 2 slashes, e.g.: &lt;code>/index/type/_search&lt;/code> would produce &lt;code>index/type&lt;/code>. You need something a bit more involved like &lt;code>&amp;quot;/([^/]+)/.*&amp;quot;&lt;/code>.&lt;/p>
 &lt;h2 id="fin">Fin&lt;/h2>
-&lt;p>That is all I wanted to show you today. Hope it might be useful/interesting to someone down the line. Leave comments on the Github issue &lt;a href="https://github.com/dainiusjocas/blog/issues/7">here&lt;/a>. Cheers!&lt;/p></description></item><item><title>Deploy babashka script to AWS Lambda</title><link>https://www.jocas.lt/blog/post/babashka-aws-lambda/</link><pubDate>Sat, 21 Mar 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/babashka-aws-lambda/</guid><description>&lt;p>TL;DR&lt;/p>
-&lt;p>I&amp;rsquo;ve managed to package a simple &lt;a href="https://github.com/borkdude/babashka">babashka&lt;/a> script to an AWS Lambda Custom Runtime. &lt;a href="https://github.com/dainiusjocas/babashka-lambda">Here&lt;/a> is the code, try for yourself.&lt;/p>
+&lt;p>That is all I wanted to show you today. Hope it might be useful/interesting to someone down the line. Leave comments on the Github issue
+&lt;a href="https://github.com/dainiusjocas/blog/issues/7" target="_blank" rel="noopener">here&lt;/a>. Cheers!&lt;/p></description></item><item><title>Deploy babashka script to AWS Lambda</title><link>https://www.jocas.lt/blog/post/babashka-aws-lambda/</link><pubDate>Sat, 21 Mar 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/babashka-aws-lambda/</guid><description>&lt;p>TL;DR&lt;/p>
+&lt;p>I&amp;rsquo;ve managed to package a simple
+&lt;a href="https://github.com/borkdude/babashka" target="_blank" rel="noopener">babashka&lt;/a> script to an AWS Lambda Custom Runtime.
+&lt;a href="https://github.com/dainiusjocas/babashka-lambda" target="_blank" rel="noopener">Here&lt;/a> is the code, try for yourself.&lt;/p>
 &lt;h2 id="motivation">Motivation&lt;/h2>
 &lt;p>Wouldn&amp;rsquo;t it be great to deploy little Clojure code snippets to Custom Lambda Runtime? The main benefits would be:&lt;/p>
 &lt;ul>
@@ -652,7 +731,8 @@ req.setParameter(&amp;quot;version_type&amp;quot;, &amp;quot;external&amp;quot;)
 &lt;li>babashka supports scripting with a subset of Clojure, which might do the work for you.&lt;/li>
 &lt;/ul>
 &lt;h2 id="the-plan">The plan&lt;/h2>
-&lt;p>I know what it takes to deploy to Lambda Custom Runtime. Last year I&amp;rsquo;ve created a Clojure project template for deploying &lt;a href="https://github.com/tokenmill/clojure-graalvm-aws-lambda-template">GraalVM compiled AWS Lambda Custom Runtime&lt;/a>. And babashka is just another self contained binary. It should be too hard to bring two things together and get it working? Challenge accepted.&lt;/p>
+&lt;p>I know what it takes to deploy to Lambda Custom Runtime. Last year I&amp;rsquo;ve created a Clojure project template for deploying
+&lt;a href="https://github.com/tokenmill/clojure-graalvm-aws-lambda-template" target="_blank" rel="noopener">GraalVM compiled AWS Lambda Custom Runtime&lt;/a>. And babashka is just another self contained binary. It should be too hard to bring two things together and get it working? Challenge accepted.&lt;/p>
 &lt;h2 id="packaging">Packaging&lt;/h2>
 &lt;p>I like to build software inside Docker containers. In this experiment, for the first attempt I&amp;rsquo;ve used this Dockerfile:&lt;/p>
 &lt;pre>&lt;code>FROM borkdude/babashka:latest as BABASHKA
@@ -671,7 +751,8 @@ RUN zip -q -r function.zip bb cp bootstrap .gitlibs/ .m2/ src/ resources/ deps.e
 &lt;p>Here:&lt;/p>
 &lt;ul>
 &lt;li>copy &lt;code>bb&lt;/code> binary from babashka Docker image,&lt;/li>
-&lt;li>download the dependencies for babashka script using &lt;code>clojure&lt;/code> (both, maven and git dependencies are supported, like is described &lt;a href="https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/">here&lt;/a>),&lt;/li>
+&lt;li>download the dependencies for babashka script using &lt;code>clojure&lt;/code> (both, maven and git dependencies are supported, like is described
+&lt;a href="https://www.jocas.lt/blog/post/gitlab-ci-clojure-dependencies/" target="_blank" rel="noopener">here&lt;/a>),&lt;/li>
 &lt;li>write a classpath to the &lt;code>cp&lt;/code> file,&lt;/li>
 &lt;li>copy all source code,&lt;/li>
 &lt;li>zip the required contents to the &lt;code>function.zip&lt;/code>.&lt;/li>
@@ -689,7 +770,8 @@ RUN zip -q -r function.zip bb cp bootstrap .gitlibs/ .m2/ src/ resources/ deps.e
 &lt;li>&lt;code>src&lt;/code>: directory with babashka scripts&lt;/li>
 &lt;/ul>
 &lt;h2 id="custom-runtime-discoveries">Custom runtime discoveries&lt;/h2>
-&lt;p>Finally, having all dependencies packaged up, I&amp;rsquo;ve deployed the &lt;code>function.zip&lt;/code> to AWS Lambda. The first error message was not very &lt;a href="https://gist.github.com/dainiusjocas/feafeef5653ff2c6e8c7b2d9627a831d">encouraging&lt;/a>:&lt;/p>
+&lt;p>Finally, having all dependencies packaged up, I&amp;rsquo;ve deployed the &lt;code>function.zip&lt;/code> to AWS Lambda. The first error message was not very
+&lt;a href="https://gist.github.com/dainiusjocas/feafeef5653ff2c6e8c7b2d9627a831d" target="_blank" rel="noopener">encouraging&lt;/a>:&lt;/p>
 &lt;pre>&lt;code class="language-text">Util_sun_misc_Signal.ensureInitialized: CSunMiscSignal.create() failed. errno: 38 Function not implemented
 Fatal error: Util_sun_misc_Signal.ensureInitialized: CSunMiscSignal.open() failed.
 JavaFrameAnchor dump:
@@ -868,7 +950,10 @@ RequestId: 263ff1be-425d-4dcb-9ea5-67020dc3041b Error: Runtime exited with error
 Runtime.ExitError
 &lt;/code>&lt;/pre>
 &lt;h2 id="the-fight">The fight&lt;/h2>
-&lt;p>After some Googling I&amp;rsquo;ve discovered several related clues &lt;a href="https://github.com/oracle/graal/issues/841">here&lt;/a> and &lt;a href="https://github.com/quarkusio/quarkus/issues/4262">here&lt;/a>. They say that signals are not supported in AWS lambda. So, why not to disable signals for babashka and see what happens? I&amp;rsquo;ve forked the repo, made a flag that disables PIPE signal handling, deployed babashka to the &lt;a href="https://hub.docker.com/r/dainiusjocas/babashka">docker hub&lt;/a> and tried to deploy lambda once again.&lt;/p>
+&lt;p>After some Googling I&amp;rsquo;ve discovered several related clues
+&lt;a href="https://github.com/oracle/graal/issues/841" target="_blank" rel="noopener">here&lt;/a> and
+&lt;a href="https://github.com/quarkusio/quarkus/issues/4262" target="_blank" rel="noopener">here&lt;/a>. They say that signals are not supported in AWS lambda. So, why not to disable signals for babashka and see what happens? I&amp;rsquo;ve forked the repo, made a flag that disables PIPE signal handling, deployed babashka to the
+&lt;a href="https://hub.docker.com/r/dainiusjocas/babashka" target="_blank" rel="noopener">docker hub&lt;/a> and tried to deploy lambda once again.&lt;/p>
 &lt;p>And? It worked:&lt;/p>
 &lt;pre>&lt;code class="language-shell">make function-name=$(make get-function-name) invoke-function
 =&amp;gt;
@@ -878,12 +963,14 @@ Runtime.ExitError
 }
 &lt;/code>&lt;/pre>
 &lt;h2 id="summary">Summary&lt;/h2>
-&lt;p>&lt;a href="https://github.com/dainiusjocas/babashka-lambda">Here&lt;/a> is the example of babashka script that can be deployed to AWS Lambda.&lt;/p>
+&lt;p>
+&lt;a href="https://github.com/dainiusjocas/babashka-lambda" target="_blank" rel="noopener">Here&lt;/a> is the example of babashka script that can be deployed to AWS Lambda.&lt;/p>
 &lt;ul>
 &lt;li>The &lt;code>function.zip&lt;/code> weights just 18MB.&lt;/li>
 &lt;li>The cold startup of the Lambda that is given 128MB of RAM is ~400ms. Subsequent calls ranges from 4ms and 120ms. The more RAM you give the faster lambda gets.&lt;/li>
 &lt;li>I can develop the code in Cursive as the structure is like of an ordinary Clojure deps.edn project (and it can be used on the JVM).&lt;/li>
-&lt;li>I made a &lt;a href="https://github.com/borkdude/babashka/pull/305">PR to babashka&lt;/a> and I&amp;rsquo;ve got accepted.&lt;/li>
+&lt;li>I made a
+&lt;a href="https://github.com/borkdude/babashka/pull/305" target="_blank" rel="noopener">PR to babashka&lt;/a> and I&amp;rsquo;ve got accepted.&lt;/li>
 &lt;/ul>
 &lt;h2 id="next-steps">Next Steps&lt;/h2>
 &lt;ul>
@@ -891,7 +978,9 @@ Runtime.ExitError
 &lt;li>Get rid of AWS CloudFormation part.&lt;/li>
 &lt;li>Work a bit more to support AWS API Gateway.&lt;/li>
 &lt;li>Create a template for such projects.&lt;/li>
-&lt;/ul></description></item><item><title>Using Search Templates in Elasticsearch</title><link>https://www.jocas.lt/blog/post/on-search-templates/</link><pubDate>Mon, 23 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/on-search-templates/</guid><description>&lt;p>I want to take a look at &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html">Search Templates&lt;/a> for Elasticsearch. Let&amp;rsquo;s apply them to examples from &lt;a href="https://www.jocas.lt/blog/post/synonym-graph-phrase-search/">previous post on Synonym Graphs&lt;/a>.&lt;/p>
+&lt;/ul></description></item><item><title>Using Search Templates in Elasticsearch</title><link>https://www.jocas.lt/blog/post/on-search-templates/</link><pubDate>Mon, 23 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/on-search-templates/</guid><description>&lt;p>I want to take a look at
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html" target="_blank" rel="noopener">Search Templates&lt;/a> for Elasticsearch. Let&amp;rsquo;s apply them to examples from
+&lt;a href="https://www.jocas.lt/blog/post/synonym-graph-phrase-search/" target="_blank" rel="noopener">previous post on Synonym Graphs&lt;/a>.&lt;/p>
 &lt;h2 id="setup">Setup&lt;/h2>
 &lt;p>I&amp;rsquo;m using Elasticsearch 7.5.1.&lt;/p>
 &lt;p>Index configuration:&lt;/p>
@@ -1220,9 +1309,12 @@ PUT /test_index-1
 &lt;li>Templates doesn&amp;rsquo;t support search index specification.&lt;/li>
 &lt;li>Field names can be parameterized, this feature alows to start/stop using a new/old field.&lt;/li>
 &lt;li>Search template can be tested in (even in production cluster) independently.&lt;/li>
-&lt;li>We can run our query against &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-search-template.html">multiple search templates&lt;/a>. Combine this with the Profile API and performance can be compared. Explain API also is supported.&lt;/li>
-&lt;/ul></description></item><item><title>Phrase Search with Synonym Graph Token Filter in Elasticsearch</title><link>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</link><pubDate>Sun, 22 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</guid><description>&lt;p>I&amp;rsquo;ve &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">written&lt;/a> that if you google for &lt;code>How can you match a long query text to a short text field?&lt;/code> you&amp;rsquo;re advised to use Elasticsearch Percolator. Today I&amp;rsquo;ll show an alternative way of solving the same problem with Elasticsearch.&lt;/p>
-&lt;p>The main idea is to use &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/analysis-synonym-graph-tokenfilter.html">Synonym Graph Token Filter&lt;/a> with some data preparation.&lt;/p>
+&lt;li>We can run our query against
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-search-template.html" target="_blank" rel="noopener">multiple search templates&lt;/a>. Combine this with the Profile API and performance can be compared. Explain API also is supported.&lt;/li>
+&lt;/ul></description></item><item><title>Phrase Search with Synonym Graph Token Filter in Elasticsearch</title><link>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</link><pubDate>Sun, 22 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/synonym-graph-phrase-search/</guid><description>&lt;p>I&amp;rsquo;ve
+&lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/" target="_blank" rel="noopener">written&lt;/a> that if you google for &lt;code>How can you match a long query text to a short text field?&lt;/code> you&amp;rsquo;re advised to use Elasticsearch Percolator. Today I&amp;rsquo;ll show an alternative way of solving the same problem with Elasticsearch.&lt;/p>
+&lt;p>The main idea is to use
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/analysis-synonym-graph-tokenfilter.html" target="_blank" rel="noopener">Synonym Graph Token Filter&lt;/a> with some data preparation.&lt;/p>
 &lt;h2 id="problem-statement">Problem Statement&lt;/h2>
 &lt;p>Say that we learned how extract some entity from free form text with techniques such as NER, dictionary annotations, or some fancy Machine Learning. And when this entity is mentioned in the search query we want to boost documents that mention this entity. Also, say you&amp;rsquo;ve ruled out using Elasticsearch Percolator because it increases network latency because it requires additional call to Elasticsearch.&lt;/p>
 &lt;p>For further discussion our unstructured text is going to be &lt;code>This description is about a Very Important Thing and something else.&lt;/code> and the extracted entity &lt;code>Very Important Thing&lt;/code>. Our test document looks like :&lt;/p>
@@ -1637,7 +1729,8 @@ PUT /test_index-1
 &lt;li>Management of the synonym list might complicate index management, e.g. you use templates for your index management.&lt;/li>
 &lt;li>The overal solution in general might look a bit too complicated.&lt;/li>
 &lt;/ol></description></item><item><title>Elasticsearch Percolator and Text Analyzers</title><link>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/percolator-phrase-analyzers/</guid><description>&lt;p>This time I need to percolate texts with different analyzers for index and search analyzers.&lt;/p>
-&lt;p>Let&amp;rsquo;s elaborate a bit on &lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/">previous article&lt;/a> and explicitly declare analyzers to use.&lt;/p>
+&lt;p>Let&amp;rsquo;s elaborate a bit on
+&lt;a href="https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/" target="_blank" rel="noopener">previous article&lt;/a> and explicitly declare analyzers to use.&lt;/p>
 &lt;p>Define index:&lt;/p>
 &lt;pre>&lt;code>PUT /my-index
 {
@@ -1946,7 +2039,8 @@ GET /my-index/_search?
 &lt;/code>&lt;/pre>
 &lt;p>We have a match! Also notice that the highlighter is broken!&lt;/p>
 &lt;p>The problem that these two analyzers have different stopword lists (no stopwords for &lt;code>standard&lt;/code> and several English stopwords for &lt;code>english&lt;/code> analyzer) and the phrase contains a stopword that is not shared between analyzers.&lt;/p>
-&lt;p>Let&amp;rsquo;s fix this surprise with &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer.html#search-quote-analyzer">&lt;code>search_quote_analyzer&lt;/code>&lt;/a>.&lt;/p>
+&lt;p>Let&amp;rsquo;s fix this surprise with
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analyzer.html#search-quote-analyzer" target="_blank" rel="noopener">&lt;code>search_quote_analyzer&lt;/code>&lt;/a>.&lt;/p>
 &lt;pre>&lt;code>DELETE my-index
 PUT /my-index
 {
@@ -2081,7 +2175,10 @@ GET /my-index/_search?
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Good. Even the highlighting works.&lt;/p></description></item><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the &lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field">Stack Overflow page&lt;/a> &lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3">or here&lt;/a> where the answer is to use &lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
+&lt;p>Good. Even the highlighting works.&lt;/p></description></item><item><title>Phrase Highlighting with the Elasticsearch Percolator</title><link>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</link><pubDate>Wed, 18 Dec 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/es-percolator-phrase-highlight/</guid><description>&lt;p>If you google &lt;code>How can you match a long query text to a short text field?&lt;/code> it will point you to the
+&lt;a href="https://stackoverflow.com/questions/51865747/elasticsearch-match-long-query-text-to-short-field" target="_blank" rel="noopener">Stack Overflow page&lt;/a>
+&lt;a href="https://discuss.elastic.co/t/match-long-query-text-to-short-field/144584/3" target="_blank" rel="noopener">or here&lt;/a> where the answer is to use
+&lt;a href="">Elasticsearch Percolator&lt;/a>.&lt;/p>
 &lt;p>My search items are phrases meaning that it should match all terms in order. Let&amp;rsquo;s create a sample setup in Kibana (v7.5) Dev dashboard.&lt;/p>
 &lt;ol>
 &lt;li>Create an index for percolation:&lt;/li>
@@ -2101,7 +2198,8 @@ GET /my-index/_search?
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
+&lt;p>Note on &lt;code>&amp;quot;term_vector&amp;quot;: &amp;quot;with_positions_offsets&amp;quot;&lt;/code>: this allows
+&lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.6/search-request-highlighting.html#fast-vector-highlighter" target="_blank" rel="noopener">Fast Vector Highlighter&lt;/a> to highlight combined phrase not just separate qeury terms.&lt;/p>
 &lt;ol start="2">
 &lt;li>Store one phrase query:&lt;/li>
 &lt;/ol>
@@ -2259,7 +2357,8 @@ GET /my-index/_search?
 }
 }
 &lt;/code>&lt;/pre>
-&lt;p>Now, take the email under the &lt;code>&amp;quot;subscriber_email&amp;quot;&lt;/code> from the response and send an email with the highlight.&lt;/p></description></item><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>&lt;p>I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I&amp;rsquo;m going to answer in this blog post is: how to build an uberjar for AWS Lambda with &lt;a href="https://github.com/tonsky/uberdeps">Uberdeps&lt;/a>?&lt;/p>
+&lt;p>Now, take the email under the &lt;code>&amp;quot;subscriber_email&amp;quot;&lt;/code> from the response and send an email with the highlight.&lt;/p></description></item><item><title>Using Uberdeps to Build AWS Lambda Uberjar</title><link>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</link><pubDate>Fri, 15 Nov 2019 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/uberdeps-for-aws-lambda/</guid><description>&lt;p>I was writing a Clojure application and the plan was to deploy it as a AWS Lambda. The question I&amp;rsquo;m going to answer in this blog post is: how to build an uberjar for AWS Lambda with
+&lt;a href="https://github.com/tonsky/uberdeps" target="_blank" rel="noopener">Uberdeps&lt;/a>?&lt;/p>
 &lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>Add an alias to the &lt;code>deps.edn&lt;/code> for uberjar building:&lt;/p>
 &lt;pre>&lt;code>{:aliases {:uberjar
@@ -2282,14 +2381,19 @@ clojure -A:uberjar --target target/UBERJAR_NAME.jar)
 &lt;hr>
 &lt;h2 id="introduction">Introduction&lt;/h2>
 &lt;p>To deploy your Clojure code to AWS Lambda you need to package it as an uberjar. If your project is managed with &lt;code>deps.edn&lt;/code>, basically you&amp;rsquo;re on your own to find a suitable library to package your code.&lt;/p>
-&lt;p>For some time to build uberjars for &lt;code>deps.edn&lt;/code> projects I was using &lt;a href="https://github.com/luchiniatwork/cambada">Cambada&lt;/a>. It did the job but I was not entirely happy with the library for a couple of reasons:&lt;/p>
+&lt;p>For some time to build uberjars for &lt;code>deps.edn&lt;/code> projects I was using
+&lt;a href="https://github.com/luchiniatwork/cambada" target="_blank" rel="noopener">Cambada&lt;/a>. It did the job but I was not entirely happy with the library for a couple of reasons:&lt;/p>
 &lt;ul>
 &lt;li>the library seems to be no longer maintained;&lt;/li>
-&lt;li>it has various &lt;a href="https://github.com/luchiniatwork/cambada/issues">bugs&lt;/a> with transitive Git dependencies. I&amp;rsquo;ve found out that these bugs are fixed in a &lt;a href="https://github.com/xfthhxk/cambada">fork&lt;/a> of the Cambada and I used it as a git dependency.&lt;/li>
+&lt;li>it has various
+&lt;a href="https://github.com/luchiniatwork/cambada/issues" target="_blank" rel="noopener">bugs&lt;/a> with transitive Git dependencies. I&amp;rsquo;ve found out that these bugs are fixed in a
+&lt;a href="https://github.com/xfthhxk/cambada" target="_blank" rel="noopener">fork&lt;/a> of the Cambada and I used it as a git dependency.&lt;/li>
 &lt;/ul>
 &lt;p>Because building an uberjar for &lt;code>deps.edn&lt;/code> boils down to just finding a library there is always temptation to try something new.&lt;/p>
 &lt;h2 id="enter-uberdeps">Enter Uberdeps&lt;/h2>
-&lt;p>For my toy project I wanted to try out &lt;a href="https://github.com/tonsky/uberdeps">Uberdeps&lt;/a>. The introduction &lt;a href="https://tonsky.me/blog/uberdeps/">blog post&lt;/a> got me interested and I really liked the main idea:&lt;/p>
+&lt;p>For my toy project I wanted to try out
+&lt;a href="https://github.com/tonsky/uberdeps" target="_blank" rel="noopener">Uberdeps&lt;/a>. The introduction
+&lt;a href="https://tonsky.me/blog/uberdeps/" target="_blank" rel="noopener">blog post&lt;/a> got me interested and I really liked the main idea:&lt;/p>
 &lt;blockquote>
 &lt;p>Takes deps.edn and packs an uberjar out of it.&lt;/p>
 &lt;/blockquote>
@@ -2310,13 +2414,16 @@ at java.lang.Class.forName0(Native Method)
 at java.lang.Class.forName(Class.java:348)
 &lt;/code>&lt;/pre>
 &lt;p>The &lt;code>my.Lambda&lt;/code> class was not found.&lt;/p>
-&lt;p>After taking a look at the contents of the uberjar I&amp;rsquo;ve noticed that the &lt;code>my.Lambda&lt;/code> class is indeed not inside the Uberjar. Ah, it seems that AOT (Ahead-of-Time) is not done out of the box. After searching and not finding a flag or some parameter that I need to pass to force the AOT compilation in the Uberdeps README, I&amp;rsquo;ve discovered an already closed &lt;a href="https://github.com/tonsky/uberdeps/pull/11">pull request&lt;/a>: the AOT compilation functionality is not implemented.&lt;/p>
+&lt;p>After taking a look at the contents of the uberjar I&amp;rsquo;ve noticed that the &lt;code>my.Lambda&lt;/code> class is indeed not inside the Uberjar. Ah, it seems that AOT (Ahead-of-Time) is not done out of the box. After searching and not finding a flag or some parameter that I need to pass to force the AOT compilation in the Uberdeps README, I&amp;rsquo;ve discovered an already closed
+&lt;a href="https://github.com/tonsky/uberdeps/pull/11" target="_blank" rel="noopener">pull request&lt;/a>: the AOT compilation functionality is not implemented.&lt;/p>
 &lt;p>I was in trouble.&lt;/p>
 &lt;h2 id="solution">Solution&lt;/h2>
 &lt;p>The solution was to manually perform AOT compilation of the relevant namespaces right before building an uberjar and then instruct Uberdeps to put the resulting class files into the uberjar.&lt;/p>
 &lt;p>To do AOT compilation I&amp;rsquo;ve written a Clojure script &lt;code>compile.clj&lt;/code>:&lt;/p>
 &lt;script src="https://gist.github.com/dainiusjocas/e9b154d7a1cbdca8558cd7c5d730d5d0.js">&lt;/script>
-&lt;p>Inspiration on how to write the script was taken from &lt;a href="https://www.reddit.com/r/Clojure/comments/8ltsrs/standalone_script_with_clj_including_dependencies/">here&lt;/a> and &lt;a href="https://github.com/tonsky/datascript/blob/master/release.clj">here&lt;/a>.&lt;/p>
+&lt;p>Inspiration on how to write the script was taken from
+&lt;a href="https://www.reddit.com/r/Clojure/comments/8ltsrs/standalone_script_with_clj_including_dependencies/" target="_blank" rel="noopener">here&lt;/a> and
+&lt;a href="https://github.com/tonsky/datascript/blob/master/release.clj" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
 &lt;p>To instruct Uberdeps to put class files to the uberjar I&amp;rsquo;ve added &lt;code>classes&lt;/code> directory to the &lt;code>:paths&lt;/code> vector in &lt;code>deps.edn&lt;/code>.&lt;/p>
 &lt;p>Just for the convenience, in the Makefile I&amp;rsquo;ve put commands for AOT compilation right before the command to build an uberjar:&lt;/p>
 &lt;pre>&lt;code>uberjar:
@@ -2350,7 +2457,8 @@ key: one-key-to-rule-them-all
 paths:
 - ./.m2/repository
 &lt;/code>&lt;/pre>
-&lt;p>When it comes to gitlibs there is no public API for changing the default directory in &lt;code>tools.deps&lt;/code>. But the underlying &lt;code>tools.gitlibs&lt;/code> uses an environment variable to set where to store the &lt;a href="https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23">gitlibs conveniently named &lt;strong>GITLIBS&lt;/strong>&lt;/a>. E.g.&lt;/p>
+&lt;p>When it comes to gitlibs there is no public API for changing the default directory in &lt;code>tools.deps&lt;/code>. But the underlying &lt;code>tools.gitlibs&lt;/code> uses an environment variable to set where to store the
+&lt;a href="https://github.com/clojure/tools.gitlibs/blob/b7acb151b97952409103094794f5fc6f4d7d3840/src/main/clojure/clojure/tools/gitlibs.clj#L23" target="_blank" rel="noopener">gitlibs conveniently named &lt;strong>GITLIBS&lt;/strong>&lt;/a>. E.g.&lt;/p>
 &lt;pre>&lt;code class="language-bash">$ (export GITLIBS=&amp;quot;.gitlibs/&amp;quot; &amp;amp;&amp;amp; clojure -A:test)
 &lt;/code>&lt;/pre>
 &lt;p>Of course, we should not forget to configure the cache:&lt;/p>
@@ -2369,7 +2477,10 @@ paths:
 - ./.m2/repository
 - ./.gitlibs
 &lt;/code>&lt;/pre>
-&lt;p>If you want to disable cache for a particular job (e.g. you&amp;rsquo;re linting with &lt;a href="https://github.com/borkdude/clj-kondo">clj-kondo&lt;/a>, which is delivered as a &lt;a href="https://www.graalvm.org/">GraalVM&lt;/a> compiled &lt;a href="https://www.graalvm.org/docs/reference-manual/native-image/">native image&lt;/a>), just give an empty map for a job&amp;rsquo;s cache setup, e.g.:&lt;/p>
+&lt;p>If you want to disable cache for a particular job (e.g. you&amp;rsquo;re linting with
+&lt;a href="https://github.com/borkdude/clj-kondo" target="_blank" rel="noopener">clj-kondo&lt;/a>, which is delivered as a
+&lt;a href="https://www.graalvm.org/" target="_blank" rel="noopener">GraalVM&lt;/a> compiled
+&lt;a href="https://www.graalvm.org/docs/reference-manual/native-image/" target="_blank" rel="noopener">native image&lt;/a>), just give an empty map for a job&amp;rsquo;s cache setup, e.g.:&lt;/p>
 &lt;pre>&lt;code class="language-yaml">lint:
 stage: test
 image: borkdude/clj-kondo
@@ -2378,6 +2489,9 @@ when: always
 script:
 - clj-kondo --lint src test
 &lt;/code>&lt;/pre>
-&lt;p>I&amp;rsquo;ve used the Gitlab CI cache while working on a streaming-text search library &lt;a href="https://github.com/tokenmill/beagle">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found &lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml">here&lt;/a>.&lt;/p>
+&lt;p>I&amp;rsquo;ve used the Gitlab CI cache while working on a streaming-text search library
+&lt;a href="https://github.com/tokenmill/beagle" target="_blank" rel="noopener">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found
+&lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml" target="_blank" rel="noopener">here&lt;/a>.&lt;/p>
 &lt;p>Hope this helps!&lt;/p></description></item><item><title>Clojure Workflow @ TokenMill</title><link>https://www.jocas.lt/blog/talk/vilnius-clojure-meetup/</link><pubDate>Thu, 30 May 2019 19:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/talk/vilnius-clojure-meetup/</guid><description>&lt;iframe src="//www.slideshare.net/slideshow/embed_code/key/1Qto0UWEglVdpB" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> &lt;/iframe> &lt;div style="margin-bottom:5px"> &lt;strong> &lt;a href="//www.slideshare.net/Dainius/clojure-workflow-tokenmill-by-dainius-jocas" title="Clojure workflow @ TokenMill by Dainius Jocas" target="_blank">Clojure workflow @ TokenMill by Dainius Jocas&lt;/a> &lt;/strong>&lt;/div>
-&lt;p>The source code of the demo project can be found &lt;a href="https://github.com/dainiusjocas/clojure-meetup-vilnius-2019-05-30">here&lt;/a>.&lt;/p></description></item></channel></rss>
+&lt;p>The source code of the demo project can be found
+&lt;a href="https://github.com/dainiusjocas/clojure-meetup-vilnius-2019-05-30" target="_blank" rel="noopener">here&lt;/a>.&lt;/p></description></item></channel></rss>

@@ -263,7 +263,7 @@ Note: there is a standalone GUI but I like the integration into the KDE System S
 &lt;p>Did I say how much I enjoyed trying to get stuff done on Windows? None at all. How come that multiple different(!) command prompts are needed to get GraalVM to compile an executable? Now I know that it would a lot better to suffer the pain and to set up the Github Actions pipeline to compile the binaries and upload them to release pages.&lt;/p>
 &lt;h2 id="what-is-missing">What is missing?&lt;/h2>
 &lt;ul>
-&lt;li>&lt;input disabled="" type="checkbox"> The analysis pipeline is not as flexible as I&amp;rsquo;d like to;&lt;/li>
+&lt;li>&lt;input checked="" disabled="" type="checkbox"> The analysis pipeline is not as flexible as I&amp;rsquo;d like to (UPDATE 2021-04-24: &lt;a href="https://github.com/dainiusjocas/lucene-grep/pull/81">implemented&lt;/a>);&lt;/li>
 &lt;li>&lt;input disabled="" type="checkbox"> Leverage the multicore CPUs by executing the search in parallel;&lt;/li>
 &lt;li>&lt;input disabled="" type="checkbox"> Batch documents for matching;&lt;/li>
 &lt;li>&lt;input disabled="" type="checkbox"> Let me know if any?&lt;/li>

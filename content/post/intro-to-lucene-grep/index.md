@@ -23,7 +23,9 @@ output:
 
 ## TL;DR
 
-What if `grep` supported the functionality of a proper search engine like [Elasticsearch](https://www.elastic.co/elasticsearch/) without a need to install any servers or index the files before searching? `lmgrep` aims to provide you just that. It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.
+What if `grep` supported the functionality of a proper search engine like [Elasticsearch](https://www.elastic.co/elasticsearch/) without a need to install any servers or index the files before searching? 
+[`lmgrep`](https://github.com/dainiusjocas/lucene-grep) aims to provide you just that. 
+It is installed as just one executable file without any dependencies, provides a command-line interface, starts-up instantly, and works on macOS, Linux, and, yes, even Windows.
 
 ## My motivation
 

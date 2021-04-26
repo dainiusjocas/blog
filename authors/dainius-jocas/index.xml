@@ -9,8 +9,7 @@ Just download the &lt;code>lmgrep&lt;/code>
 &amp;quot;tokenizer&amp;quot;: {&amp;quot;name&amp;quot;: &amp;quot;standard&amp;quot;},
 &amp;quot;token-filters&amp;quot;: [
 {&amp;quot;name&amp;quot;: &amp;quot;lowercase&amp;quot;},
-{&amp;quot;name&amp;quot;: &amp;quot;englishminimalstem&amp;quot;
-}
+{&amp;quot;name&amp;quot;: &amp;quot;englishminimalstem&amp;quot;}
 ]
 }'
 # =&amp;gt; [&amp;quot;dog&amp;quot;,&amp;quot;and&amp;quot;,&amp;quot;cat&amp;quot;]

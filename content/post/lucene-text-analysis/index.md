@@ -33,8 +33,7 @@ echo "Dogs and CATS" | lmgrep \
       "tokenizer": {"name": "standard"},
       "token-filters": [
         {"name": "lowercase"},
-        {"name": "englishminimalstem"
-      }
+        {"name": "englishminimalstem"}
     ]
   }'
 # => ["dog","and","cat"]

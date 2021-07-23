@@ -1,4 +1,62 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/categories/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>Elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 03 Oct 2020 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Elasticsearch</title><link>https://www.jocas.lt/blog/categories/elasticsearch/</link></image><item><title>How to Prevent Data Corruption in Elasticsearch When Using Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/kc_es_data_consistency/</link><pubDate>Sat, 03 Oct 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kc_es_data_consistency/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/categories/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>Elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Fri, 23 Jul 2021 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Elasticsearch</title><link>https://www.jocas.lt/blog/categories/elasticsearch/</link></image><item><title>Make Elasticsearch Query Profiling Faster in Kibana</title><link>https://www.jocas.lt/blog/post/kibana-profile-many-shards-hack/</link><pubDate>Fri, 23 Jul 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kibana-profile-many-shards-hack/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+&lt;pre>&lt;code>curl &amp;quot;http://localhost:9200/index-with-many-shards/_search&amp;quot; -H 'Content-Type: application/json' -d'{&amp;quot;profile&amp;quot;: true}' | jq ' .profile.shards = [.profile.shards[0]]' | pbcopy
+&lt;/code>&lt;/pre>
+&lt;p>and paste into the Kibana&amp;rsquo;s Search Profile panel.&lt;/p>
+&lt;h2 id="problem">Problem&lt;/h2>
+&lt;p>When you profile a complex Elasticsearch query that targets many shards then Kibana might need a very long time (think, minutes) to visualize the profiling data.
+It might be due to some bug in the Kibana or maybe you just throw too much data in there and since Javascript is single threaded it just takes time.
+Anyway, you want to see the profile data visualization because reading the raw JSON is not your thing.&lt;/p>
+&lt;h2 id="solution">Solution&lt;/h2>
+&lt;p>A trick you can try is to visualize only a part of the profile data.
+What part?
+Let&amp;rsquo;s say the profile data from only one shard.&lt;/p>
+&lt;p>The Elasticsearch response with the profile data has this shape:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot;: 3,
+&amp;quot;timed_out&amp;quot;: false,
+&amp;quot;_shards&amp;quot;: {
+&amp;quot;total&amp;quot;: 66,
+&amp;quot;successful&amp;quot;: 66,
+&amp;quot;skipped&amp;quot;: 0,
+&amp;quot;failed&amp;quot;: 0
+},
+&amp;quot;hits&amp;quot;: {
+&amp;quot;total&amp;quot;: {
+&amp;quot;value&amp;quot;: 10000,
+&amp;quot;relation&amp;quot;: &amp;quot;gte&amp;quot;
+},
+&amp;quot;max_score&amp;quot;: null,
+&amp;quot;hits&amp;quot;: []
+},
+&amp;quot;profile&amp;quot;: {
+&amp;quot;shards&amp;quot;: [
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>And the important bits are under &lt;code>.profile.shards&lt;/code> array (&lt;code>jq&lt;/code> syntax).
+Let&amp;rsquo;s create a little &lt;code>jq&lt;/code> script that would transform the response body to include the profile data from only one shard:&lt;/p>
+&lt;pre>&lt;code class="language-shell">jq '.profile.shards = [.profile.shards[0]]'
+&lt;/code>&lt;/pre>
+&lt;p>The output is now much smaller.&lt;/p>
+&lt;p>For this script to work its input must be the full body of the Elasticsearch response in JSON.
+Luckily for us, a simple &lt;code>curl&lt;/code> (that can be copied directly from Kibana Dev Tools) does the job well, e.g.:&lt;/p>
+&lt;pre>&lt;code class="language-shell">curl &amp;quot;http://localhost:9200/index-with-many-shards/_search&amp;quot; -H 'Content-Type: application/json' -d'{&amp;quot;profile&amp;quot;: true}'
+&lt;/code>&lt;/pre>
+&lt;p>Pipe the output of that &lt;code>curl&lt;/code> command to the &lt;code>jq&lt;/code> script:&lt;/p>
+&lt;pre>&lt;code class="language-shell">curl &amp;quot;http://localhost:9200/index-with-many-shards/_search&amp;quot; -H 'Content-Type: application/json' -d'{&amp;quot;profile&amp;quot;: true}' | jq '.profile.shards = [.profile.shards[0]]'
+&lt;/code>&lt;/pre>
+&lt;p>Now just select the output with you mouse, copy, and then paste it in Kibana&amp;rsquo;s Search Profile panel and investigate the query profile.&lt;/p>
+&lt;h2 id="but-using-the-mouse-in-terminal-is-not-sleek">But using the mouse in terminal is not sleek&lt;/h2>
+&lt;p>One aditional trick to make the process sleeker is to send the profile data to the clipboard directly from your terminal and then paste in Kibana.
+This can be done by simply piping the output to your clipboard.
+Unfortunately, the script is different for different operating systems.&lt;/p>
+&lt;p>Example in macOS:&lt;/p>
+&lt;pre>&lt;code class="language-shell">curl &amp;quot;http://localhost:9200/index-with-many-shards/_search&amp;quot; -H 'Content-Type: application/json' -d'{&amp;quot;profile&amp;quot;: true}' | jq '.profile.shards = [.profile.shards[0]]' | pbcopy
+&lt;/code>&lt;/pre>
+&lt;p>Example in Kubuntu 21.04:&lt;/p>
+&lt;pre>&lt;code class="language-shell">curl &amp;quot;http://localhost:9200/index-with-many-shards/_search&amp;quot; -H 'Content-Type: application/json' -d'{&amp;quot;profile&amp;quot;: true}' | jq '.profile.shards = [.profile.shards[0]]' | xclip -selection clip
+&lt;/code>&lt;/pre></description></item><item><title>How to Prevent Data Corruption in Elasticsearch When Using Kafka Connect Elasticsearch Sink Connector</title><link>https://www.jocas.lt/blog/post/kc_es_data_consistency/</link><pubDate>Sat, 03 Oct 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kc_es_data_consistency/</guid><description>&lt;h3 id="tldr">TL;DR&lt;/h3>
 &lt;p>When the &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch">Elasticsearch indexer&lt;/a> is highly concurrent, Kafka record keys are used as Elasticsearch document IDs, and indexer is set to delete records on &lt;code>null&lt;/code> values, then Kafka Connect Elasticsearch Sink Connector might corrupt your data: documents that should not be deleted end up being deleted, or documents that should be deleted end up still being present in the index. The fix is to use external versioning for deletes in bulk requests as it is proposed in this &lt;a href="https://github.com/confluentinc/kafka-connect-elasticsearch/pull/422">Github Pull Request&lt;/a>.&lt;/p>
 &lt;h3 id="the-problem">The problem&lt;/h3>
 &lt;p>NOTE: as of version 6.0.0 of the Confluent Platform (last checked on 2020-10-02) the bug that might lead to data corruption is still present.&lt;/p>

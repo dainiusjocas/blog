@@ -23,7 +23,7 @@ all_day: false
 publishDate: "2021-06-29T22:00:00Z"
 
 authors: [Dainius Jocas]
-tags: [meetup, lucene, lucene-grep, graalvm]
+tags: [meetup, lucene, lucene-grep, clojure, graalvm]
 
 # Is this a featured talk? (true/false)
 featured: true

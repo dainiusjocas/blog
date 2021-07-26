@@ -56,7 +56,9 @@ Unfortunately, the script is different for different operating systems.&lt;/p>
 &lt;/code>&lt;/pre>
 &lt;p>Example in Kubuntu 21.04:&lt;/p>
 &lt;pre>&lt;code class="language-shell">curl &amp;quot;http://localhost:9200/index-with-many-shards/_search&amp;quot; -H 'Content-Type: application/json' -d'{&amp;quot;profile&amp;quot;: true}' | jq '.profile.shards = [.profile.shards[0]]' | xclip -selection clip
-&lt;/code>&lt;/pre></description></item><item><title>Tips and Tricks to Scale Elasticsearch for 1M RPMs and Beyond</title><link>https://www.jocas.lt/blog/talk/berlin-buzzwords-2021/</link><pubDate>Wed, 16 Jun 2021 21:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/talk/berlin-buzzwords-2021/</guid><description>&lt;iframe width="560" height="315" src="https://www.youtube.com/embed/mh4fVhc4jNs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>&lt;/iframe>
+&lt;/code>&lt;/pre></description></item><item><title>Lucene-grep a.k.a. lmgrep</title><link>https://www.jocas.lt/blog/talk/london-information-retrieval-meetup-2021-06/</link><pubDate>Tue, 29 Jun 2021 18:15:00 +0000</pubDate><guid>https://www.jocas.lt/blog/talk/london-information-retrieval-meetup-2021-06/</guid><description>&lt;iframe width="560" height="315" src="https://www.youtube.com/embed/82h69ZGzCsE" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>&lt;/iframe>
+&lt;p>A live notebook used during the presentation can be found (and played with) &lt;a href="https://nextjournal.com/test-lmgrep-demo-test/lmgrep-london-information-retrieval-meetup">here&lt;/a>.&lt;/p>
+&lt;p>Kudos for the &lt;a href="nextjournal.com">nextjournal.com&lt;/a>!&lt;/p></description></item><item><title>Tips and Tricks to Scale Elasticsearch for 1M RPMs and Beyond</title><link>https://www.jocas.lt/blog/talk/berlin-buzzwords-2021/</link><pubDate>Wed, 16 Jun 2021 21:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/talk/berlin-buzzwords-2021/</guid><description>&lt;iframe width="560" height="315" src="https://www.youtube.com/embed/mh4fVhc4jNs" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>&lt;/iframe>
 &lt;iframe src="https://docs.google.com/presentation/d/e/2PACX-1vQzfe8kznB3ykPLaI2g9Dpc50qs069hdPzS_oZz9gnl-bHyORdQE9wfoFztQ4YivPYgqoytZqmah3EM/embed?start=false&amp;loop=false&amp;delayms=3000" frameborder="0" width="960" height="569" allowfullscreen="true" mozallowfullscreen="true" webkitallowfullscreen="true">&lt;/iframe></description></item><item><title>Lessons Learned While Scaling Elasticsearch @ Vinted</title><link>https://www.jocas.lt/blog/talk/elasticsearch-community-meetup/</link><pubDate>Thu, 27 May 2021 19:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/talk/elasticsearch-community-meetup/</guid><description>&lt;iframe src="//www.slideshare.net/slideshow/embed_code/key/9oQeHNIi2TzlWP" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> &lt;/iframe> &lt;div style="margin-bottom:5px"> &lt;strong> &lt;a href="//www.slideshare.net/Dainius/lessons-learned-while-scaling-elasticsearch-at-vinted" title="Lessons Learned While Scaling Elasticsearch at Vinted" target="_blank">Lessons Learned While Scaling Elasticsearch at Vinted&lt;/a> &lt;/strong> from &lt;strong>&lt;a href="https://www.slideshare.net/Dainius" target="_blank">Dainius Jocas&lt;/a>&lt;/strong> &lt;/div>
 &lt;p>Also the video is available:&lt;/p>
 &lt;iframe width="560" height="315" src="https://www.youtube.com/embed/TWTQscrD4DI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>&lt;/iframe></description></item><item><title>Don't Change the Partition Count for Kafka Topics!</title><link>https://www.jocas.lt/blog/talk/wearedevelopers-2021-05-12/</link><pubDate>Wed, 12 May 2021 18:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/talk/wearedevelopers-2021-05-12/</guid><description>&lt;iframe src="//www.slideshare.net/slideshow/embed_code/key/kZMqDKr91XpXnv" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> &lt;/iframe> &lt;div style="margin-bottom:5px"> &lt;strong> &lt;a href="//www.slideshare.net/Dainius/dont-change-the-partition-count-for-kafka-topics-248323982" title="Don&amp;#x27;t change the partition count for kafka topics!" target="_blank">Don&amp;#x27;t change the partition count for kafka topics!&lt;/a> &lt;/strong> from &lt;strong>&lt;a href="//www.slideshare.net/Dainius" target="_blank">Dainius Jocas&lt;/a>&lt;/strong> &lt;/div></description></item><item><title>lmgrep Text Analysis</title><link>https://www.jocas.lt/blog/post/lucene-text-analysis/</link><pubDate>Fri, 23 Apr 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/lucene-text-analysis/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
@@ -2443,4 +2445,484 @@ script:
 &lt;/code>&lt;/pre>
 &lt;p>I&amp;rsquo;ve used the Gitlab CI cache while working on a streaming-text search library &lt;a href="https://github.com/tokenmill/beagle">Beagle&lt;/a>. A full .gitlab-ci.yml file example of the setup can be found &lt;a href="https://github.com/tokenmill/beagle/blob/master/.gitlab-ci.yml">here&lt;/a>.&lt;/p>
 &lt;p>Hope this helps!&lt;/p></description></item><item><title>Clojure Workflow @ TokenMill</title><link>https://www.jocas.lt/blog/talk/vilnius-clojure-meetup/</link><pubDate>Thu, 30 May 2019 19:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/talk/vilnius-clojure-meetup/</guid><description>&lt;iframe src="//www.slideshare.net/slideshow/embed_code/key/1Qto0UWEglVdpB" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> &lt;/iframe> &lt;div style="margin-bottom:5px"> &lt;strong> &lt;a href="//www.slideshare.net/Dainius/clojure-workflow-tokenmill-by-dainius-jocas" title="Clojure workflow @ TokenMill by Dainius Jocas" target="_blank">Clojure workflow @ TokenMill by Dainius Jocas&lt;/a> &lt;/strong>&lt;/div>
-&lt;p>The source code of the demo project can be found &lt;a href="https://github.com/dainiusjocas/clojure-meetup-vilnius-2019-05-30">here&lt;/a>.&lt;/p></description></item></channel></rss>
+&lt;p>The source code of the demo project can be found &lt;a href="https://github.com/dainiusjocas/clojure-meetup-vilnius-2019-05-30">here&lt;/a>.&lt;/p></description></item><item><title/><link>https://www.jocas.lt/blog/slides/london-information-retrieval-meetup-2021-06/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/slides/london-information-retrieval-meetup-2021-06/</guid><description>&lt;h1 id="lucene-grep-aka-lmgrep">Lucene-Grep a.k.a. &lt;code>lmgrep&lt;/code>&lt;/h1>
+&lt;hr>
+&lt;h1 id="whoami">&lt;code>whoami&lt;/code>&lt;/h1>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;name&amp;quot;: &amp;quot;Dainius Jocas&amp;quot;,
+&amp;quot;company&amp;quot;: {
+&amp;quot;name&amp;quot;: &amp;quot;Vinted&amp;quot;,
+&amp;quot;mission&amp;quot;: &amp;quot;Make second-hand the first choice worldwide&amp;quot;
+},
+&amp;quot;role&amp;quot;: &amp;quot;Staff Engineer&amp;quot;,
+&amp;quot;website&amp;quot;: &amp;quot;https://www.jocas.lt&amp;quot;,
+&amp;quot;twitter&amp;quot;: &amp;quot;@dainius_jocas&amp;quot;,
+&amp;quot;github&amp;quot;: &amp;quot;dainiusjocas&amp;quot;,
+&amp;quot;author_of_oss&amp;quot;: [&amp;quot;lucene-grep&amp;quot;, &amp;quot;ket&amp;quot;]
+}
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h1 id="agenda">Agenda&lt;/h1>
+&lt;ol>
+&lt;li>Intro&lt;/li>
+&lt;li>Whats inside Lucene-Grep?&lt;/li>
+&lt;li>Use cases&lt;/li>
+&lt;li>Future work&lt;/li>
+&lt;li>Discussion&lt;/li>
+&lt;/ol>
+&lt;hr>
+&lt;h1 id="intro">Intro&lt;/h1>
+&lt;ul>
+&lt;li>&lt;strong>&lt;code>lmgrep&lt;/code>&lt;/strong> is a CLI full-text search tool&lt;/li>
+&lt;li>Interface is similar to &lt;strong>grep&lt;/strong>&lt;/li>
+&lt;li>Based on &lt;strong>Lucene&lt;/strong>&lt;/li>
+&lt;li>Lucene Monitor library is the main building block&lt;/li>
+&lt;li>Compiled with the GraalVM &lt;strong>&lt;code>native-image&lt;/code>&lt;/strong>&lt;/li>
+&lt;li>Single binary file, no external dependencies&lt;/li>
+&lt;li>Supports Linux, MacOS, Windows&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="origin">Origin&lt;/h2>
+&lt;ul>
+&lt;li>Used &lt;strong>Elasticsearch Percolator&lt;/strong> for some basic named entity recognition (NER)&lt;/li>
+&lt;li>Needed to deploy to AWS Lambda, Elasticsearch was not an option&lt;/li>
+&lt;li>However, I really liked the idea of expressing entities as full-text queries&lt;/li>
+&lt;li>Found the &lt;strong>Luwak&lt;/strong> library, deployed on AWS Lambda, however it ran on JVM&lt;/li>
+&lt;li>&lt;strong>Gunnar Morling&lt;/strong> blog post about GraalVM native-image Lucene on AWS Lambda&lt;/li>
+&lt;li>Convinced Red Hat devs to open source and release &lt;strong>quarkiverse/quarkus-lucene&lt;/strong>&lt;/li>
+&lt;li>Hacked Lucene Grep&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="grep-vs-lmgrep">&lt;code>grep&lt;/code> vs &lt;code>lmgrep&lt;/code>&lt;/h2>
+&lt;pre>&lt;code class="language-bash"> echo &amp;quot;Lucene is awesome&amp;quot; | grep Lucene
+&lt;/code>&lt;/pre>
+&lt;pre>&lt;code class="language-bash"> echo &amp;quot;Lucene is awesome&amp;quot; | lmgrep Lucene
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h2 id="installing-the-lmgrep">Installing the &lt;code>lmgrep&lt;/code>&lt;/h2>
+&lt;p>&lt;strong>&lt;code>brew&lt;/code>&lt;/strong> or a shell script on Linux&lt;/p>
+&lt;pre>&lt;code class="language-bash">wget https://github.com/dainiusjocas/lucene-grep/releases/download/v2021.05.23/lmgrep-v2021.05.23-linux-static-amd64.zip
+unzip lmgrep-v2021.05.23-linux-static-amd64.zip
+mv lmgrep /usr/local/bin
+&lt;/code>&lt;/pre>
+&lt;p>&lt;strong>&lt;code>brew&lt;/code>&lt;/strong> on MacOS&lt;/p>
+&lt;pre>&lt;code class="language-bash">brew install dainiusjocas/brew/lmgrep
+&lt;/code>&lt;/pre>
+&lt;p>&lt;strong>&lt;code>scoop&lt;/code>&lt;/strong> on Windows&lt;/p>
+&lt;pre>&lt;code class="language-bash">scoop bucket add scoop-clojure https://github.com/littleli/scoop-clojure
+scoop bucket add extras
+scoop install lmgrep
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h1 id="whats-inside">Whats inside?&lt;/h1>
+&lt;ul>
+&lt;li>Reading from file(s)&lt;/li>
+&lt;li>Searching for files with &lt;strong>GLOB, e.g. &amp;lsquo;&lt;/strong>&lt;code>**/*.txt&lt;/code>&lt;strong>'&lt;/strong>&lt;/li>
+&lt;li>Reading from &lt;strong>STDIN&lt;/strong>&lt;/li>
+&lt;li>Writing to &lt;strong>STDOUT&lt;/strong> in various formats, e.g. JSON&lt;/li>
+&lt;li>Text analysis pipeline&lt;/li>
+&lt;li>Multiple query parsers&lt;/li>
+&lt;li>Text tokenization with **&lt;code>--only-analyze&lt;/code>**flag&lt;/li>
+&lt;li>Loading multiple queries from a file&lt;/li>
+&lt;li>Full-text search&lt;/li>
+&lt;li>&lt;strong>&lt;code>lmgrep -h&lt;/code>&lt;/strong> for the full list of available options&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h1 id="text-analysis">Text Analysis&lt;/h1>
+&lt;ul>
+&lt;li>The same good ol&amp;rsquo; &lt;strong>&lt;code>lucene&lt;/code>&lt;/strong> text analysis&lt;/li>
+&lt;li>45 predefined analyzers available, e.g. &lt;strong>&lt;code>LithuanianAnalyzer&lt;/code>&lt;/strong>&lt;/li>
+&lt;li>5 character filters&lt;/li>
+&lt;li>14 tokenizers&lt;/li>
+&lt;li>113 token filters&lt;/li>
+&lt;li>However, not everything that Lucene provides is available in &lt;strong>&lt;code>lmgrep&lt;/code>&lt;/strong> because of limitations of the &lt;strong>GraalVM native-image&lt;/strong>&lt;/li>
+&lt;li>&lt;a href="https://github.com/dainiusjocas/lucene-grep/blob/main/docs/analysis-components.md">https://github.com/dainiusjocas/lucene-grep/blob/main/docs/analysis-components.md&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="custom-text-analysis-issue">Custom Text Analysis Issue&lt;/h2>
+&lt;ul>
+&lt;li>At first exposed several CLI flags for text analysis
+&lt;ul>
+&lt;li>a problem with order of execution&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Lucene analyzers are Java classes&lt;/li>
+&lt;li>For a CLI tool, exposing Java classes is not a good option&lt;/li>
+&lt;li>Something similar to Elasticsearch analysis syntax is needed&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="text-analysis-definition">Text Analysis Definition&lt;/h2>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;char-filters&amp;quot;: [
+{&amp;quot;name&amp;quot;: &amp;quot;htmlStrip&amp;quot;},
+{
+&amp;quot;name&amp;quot;: &amp;quot;patternReplace&amp;quot;,
+&amp;quot;args&amp;quot;: {
+&amp;quot;pattern&amp;quot;: &amp;quot;foo&amp;quot;,
+&amp;quot;replacement&amp;quot;: &amp;quot;bar&amp;quot;
+}
+}
+],
+&amp;quot;tokenizer&amp;quot;: {&amp;quot;name&amp;quot;: &amp;quot;standard&amp;quot;},
+&amp;quot;token-filters&amp;quot;: [
+{&amp;quot;name&amp;quot;: &amp;quot;englishMinimalStem&amp;quot;},
+{&amp;quot;name&amp;quot;: &amp;quot;uppercase&amp;quot;}
+]
+}
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h1 id="various-query-parsers---query-parser">Various Query Parsers &lt;code>--query-parser&lt;/code>&lt;/h1>
+&lt;hr>
+&lt;h2 id="--query-parserclassic">&lt;code>--query-parser&lt;/code>=classic&lt;/h2>
+&lt;ul>
+&lt;li>The default one&lt;/li>
+&lt;li>When googling for the &lt;code>Lucene query syntax&lt;/code>, the first hit&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;Lucene is awesome&amp;quot; | lmgrep --query-parser=classic &amp;quot;lucene is aweso~&amp;quot;
+&lt;/code>&lt;/pre>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;Lucene is awesome&amp;quot; | lmgrep --query-parser=classic &amp;quot;\&amp;quot;lucene is\&amp;quot;&amp;quot;
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h2 id="--query-parsercomplex-phrase">&lt;code>--query-parser=&lt;/code>complex-phrase&lt;/h2>
+&lt;ul>
+&lt;li>similar to the &lt;strong>&lt;code>classic&lt;/code>&lt;/strong> query parser&lt;/li>
+&lt;li>but phrase queries are more expressive&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;jonathann jon peterson&amp;quot; | lmgrep --query-parser=complex-phrase &amp;quot;\&amp;quot;(john jon jonathan~) peters*\&amp;quot;&amp;quot;
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h2 id="--query-parsersimple">&lt;code>--query-parser=&lt;/code>simple&lt;/h2>
+&lt;ul>
+&lt;li>similar to the &lt;strong>&lt;code>classic&lt;/code>&lt;/strong> query parser&lt;/li>
+&lt;li>&lt;strong>BUT&lt;/strong> any errors in the query syntax will be ignored and the parser will attempt to decipher what it can&lt;/li>
+&lt;li>E.g. given &lt;code>term1\* &lt;/code>searches for the term &lt;code>term1*&lt;/code>&lt;/li>
+&lt;li>Probably should be the default query parser in &lt;strong>&lt;code>lmgrep&lt;/code>&lt;/strong>&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="--query-parserstandard">&lt;code>--query-parser=&lt;/code>standard&lt;/h2>
+&lt;ul>
+&lt;li>Implementation of the &lt;a href="https://javadoc.io/static/org.apache.lucene/lucene-queryparser/8.9.0/org/apache/lucene/queryparser/classic/package-summary.html">Lucene classic query parser&lt;/a> using the flexible query parser frameworks&lt;/li>
+&lt;li>There must be a reason why it comes with the default &lt;strong>&lt;code>lucene&lt;/code>&lt;/strong> dependency&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="--query-parsersurround">&lt;code>--query-parser=&lt;/code>surround&lt;/h2>
+&lt;ul>
+&lt;li>Constructs span queries that use positional information&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;Lucene is awesome&amp;quot; | lmgrep --query-parser=surround &amp;quot;2W(lucene, awesome)&amp;quot;
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>if the term order is &lt;strong>NOT&lt;/strong> important: &lt;strong>W-&amp;gt;N&lt;/strong>&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;Lucene is awesome&amp;quot; | lmgrep --query-parser=surround &amp;quot;2N(awesome, lucene)&amp;quot;
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>WARNING: query terms are not analyzed&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h1 id="--only-analyze">&lt;code>--only-analyze&lt;/code>&lt;/h1>
+&lt;ul>
+&lt;li>Just &lt;strong>apply&lt;/strong> the &lt;strong>text analyzer&lt;/strong> on the &lt;strong>input text&lt;/strong> and &lt;strong>output the list(s) of tokens&lt;/strong>&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="--only-analyze-basic-example">&lt;code>--only-analyze&lt;/code>: basic example&lt;/h2>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;Lucene is awesome&amp;quot; | lmgrep --only-analyze
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h2 id="--only-analyze-custom-text-analysis-pipeline">&lt;strong>&lt;code>--only-analyze&lt;/code>&lt;/strong>: custom text analysis pipeline&lt;/h2>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;&amp;lt;p&amp;gt;foo bars baz&amp;lt;/p&amp;gt;&amp;quot; | lmgrep --only-analyze --analysis='
+{
+&amp;quot;char-filters&amp;quot;: [
+{&amp;quot;name&amp;quot;: &amp;quot;htmlStrip&amp;quot;},
+{
+&amp;quot;name&amp;quot;: &amp;quot;patternReplace&amp;quot;,
+&amp;quot;args&amp;quot;: {
+&amp;quot;pattern&amp;quot;: &amp;quot;foo&amp;quot;,
+&amp;quot;replacement&amp;quot;: &amp;quot;bar&amp;quot;
+}
+}
+],
+&amp;quot;tokenizer&amp;quot;: {&amp;quot;name&amp;quot;: &amp;quot;standard&amp;quot;},
+&amp;quot;token-filters&amp;quot;: [
+{&amp;quot;name&amp;quot;: &amp;quot;englishMinimalStem&amp;quot;},
+{&amp;quot;name&amp;quot;: &amp;quot;uppercase&amp;quot;}
+]
+}
+'
+&lt;/code>&lt;/pre>
+&lt;pre>&lt;code class="language-json">[&amp;quot;BAR&amp;quot;,&amp;quot;BAR&amp;quot;,&amp;quot;BAZ&amp;quot;]
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h2 id="--only-analyze-with---explain">&lt;code>--only-analyze&lt;/code> with &lt;code>--explain&lt;/code>&lt;/h2>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;Dogs and CAt&amp;quot; | lmgrep --only-analyze --explain | jq
+&lt;/code>&lt;/pre>
+&lt;pre>&lt;code class="language-json">[
+{
+&amp;quot;token&amp;quot;: &amp;quot;dog&amp;quot;,
+&amp;quot;position&amp;quot;: 0,
+&amp;quot;positionLength&amp;quot;: 1,
+&amp;quot;type&amp;quot;: &amp;quot;&amp;lt;ALPHANUM&amp;gt;&amp;quot;,
+&amp;quot;end_offset&amp;quot;: 4,
+&amp;quot;start_offset&amp;quot;: 0
+},
+{
+&amp;quot;end_offset&amp;quot;: 8,
+&amp;quot;positionLength&amp;quot;: 1,
+&amp;quot;position&amp;quot;: 1,
+&amp;quot;start_offset&amp;quot;: 5,
+&amp;quot;type&amp;quot;: &amp;quot;&amp;lt;ALPHANUM&amp;gt;&amp;quot;,
+&amp;quot;token&amp;quot;: &amp;quot;and&amp;quot;
+},
+{
+&amp;quot;position&amp;quot;: 2,
+&amp;quot;token&amp;quot;: &amp;quot;cat&amp;quot;,
+&amp;quot;positionLength&amp;quot;: 1,
+&amp;quot;end_offset&amp;quot;: 12,
+&amp;quot;type&amp;quot;: &amp;quot;&amp;lt;ALPHANUM&amp;gt;&amp;quot;,
+&amp;quot;start_offset&amp;quot;: 9
+}
+]
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>The idea is similar to the Elasticsearch&amp;rsquo;s &lt;code>_analyze&lt;/code> API&lt;/li>
+&lt;li>No need to recreate an index on every custom analyzer change&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h2 id="--only-analyze-output-for-graphviz">&lt;code>--only-analyze&lt;/code>: output for graphviz&lt;/h2>
+&lt;ul>
+&lt;li>&lt;strong>TODO&lt;/strong>&lt;/li>
+&lt;/ul>
+&lt;p>&lt;img src="https://nextjournal.com/data/QmW9eMZvaoJZhgykEbhMEGmRqAq9Qx4GrKcTa8Kfwmj1Zk?content-type=image/png&amp;amp;node-id=9e3a426c-5354-4378-9cd9-a079f7760c23&amp;amp;filename=tokensSyns.png&amp;amp;node-kind=file" alt="tokensSyns.png" title="&amp;lt;p&amp;gt;Token graph&amp;lt;/p&amp;gt;">&lt;/p>
+&lt;hr>
+&lt;h1 id="loading-queries-from-a-file">Loading queries from a file&lt;/h1>
+&lt;pre>&lt;code class="language-bash">echo &amp;quot;I have two dogs&amp;quot; | lmgrep --queries-file=dog-lovers.json
+&lt;/code>&lt;/pre>
+&lt;pre>&lt;code class="language-json">[
+{
+&amp;quot;id&amp;quot;: &amp;quot;german_language&amp;quot;,
+&amp;quot;query&amp;quot;: &amp;quot;hund&amp;quot;,
+&amp;quot;stemmer&amp;quot;: &amp;quot;german&amp;quot;
+},
+{
+&amp;quot;id&amp;quot;: &amp;quot;english_language&amp;quot;,
+&amp;quot;query&amp;quot;: &amp;quot;dog&amp;quot;,
+&amp;quot;stemmer&amp;quot;: &amp;quot;english&amp;quot;
+}
+]
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>load all queries once&lt;/li>
+&lt;li>&lt;strong>100K&lt;/strong> queries takes about &lt;strong>1s&lt;/strong> to load on my laptop&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h1 id="full-text-search">Full-text search&lt;/h1>
+&lt;pre>&lt;code class="language-bash">mkdir demo
+cd demo
+echo &amp;quot;Lucene is awesome&amp;quot; &amp;gt; lucene.txt
+echo &amp;quot;Grep is awesome&amp;quot; &amp;gt; grep.txt
+lmgrep lucene **.txt
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h1 id="full-text-file-search-with-score">Full-text File Search with Score&lt;/h1>
+&lt;pre>&lt;code class="language-bash">cd
+mkdir full-text-search || true
+cd full-text-search
+echo &amp;quot;Lucene is awesome&amp;quot; &amp;gt; lucene.txt
+echo &amp;quot;Lucene Grep is build on Lucene Monitor library&amp;quot; &amp;gt; lucene-grep.txt
+lmgrep &amp;quot;Lucene&amp;quot; '**.txt' --no-split --with-score --format=json | jq -s -c 'sort_by(.score)[]' | tac | head -3 | jq
+&lt;/code>&lt;/pre>
+&lt;hr>
+&lt;h1 id="source-code-search">Source Code Search&lt;/h1>
+&lt;ul>
+&lt;li>Specify a custom analyzer for you programming language&lt;/li>
+&lt;li>E.g. &lt;strong>WordDelimiterGraphFilter&lt;/strong> that &lt;strong>&amp;ldquo;MyFooClass&amp;rdquo; =&amp;gt; [&amp;ldquo;My&amp;rdquo;, &amp;ldquo;Foo&amp;rdquo;, &amp;ldquo;Class&amp;rdquo;]&lt;/strong>&lt;/li>
+&lt;li>Enable scoring&lt;/li>
+&lt;li>Output hyperlinks in a (supported) terminal emulator to the specific line number&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h1 id="alternative-to-elasticsearch-percolator">Alternative to Elasticsearch Percolator&lt;/h1>
+&lt;ul>
+&lt;li>Start a &lt;strong>&lt;code>lmgrep&lt;/code>&lt;/strong> with open &lt;strong>STDIN&lt;/strong>, &lt;strong>STDOUT&lt;/strong>, and &lt;strong>STDERR&lt;/strong> pipes for inter-process communication&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-ruby">require 'open3'
+@stdin, @stdout, @stderr, @wait_thr = Open3.popen3(&amp;quot;lmgrep lucene&amp;quot;)
+@stdin.puts &amp;quot;Lucene is awesome&amp;quot;
+@stdout.gets
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;a href="https://github.com/dainiusjocas/lucene-grep/tree/main/examples/ruby-percolator">https://github.com/dainiusjocas/lucene-grep/tree/main/examples/ruby-percolator&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h1 id="future-work">Future work&lt;/h1>
+&lt;ul>
+&lt;li>Your issues &lt;a href="https://github.com/dainiusjocas/lucene-grep/issues">https://github.com/dainiusjocas/lucene-grep/issues&lt;/a>&lt;/li>
+&lt;li>Machanism for shared analysis components
+&lt;ul>
+&lt;li>now only inlined text analysis config is supported&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>LMGREP_HOME for keeping all the resources in one place&lt;/li>
+&lt;li>Release analyzer construction code as a standalone library&lt;/li>
+&lt;li>Melt your CPU
+&lt;ul>
+&lt;li>Use all CPU cores to the max for as short as possible&lt;/li>
+&lt;li>Do not preserve the input order&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Optimize &lt;strong>&lt;code>--with-scored-highlights&lt;/code>&lt;/strong> option
+&lt;ul>
+&lt;li>Sort output by score&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Analysis components with inlined data
+&lt;ul>
+&lt;li>E.g. inlines stopwords list, not a file&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;h1 id="discussion">Discussion&lt;/h1>
+&lt;details id="com.nextjournal.article">
+&lt;summary>This notebook was exported from &lt;a href="https://nextjournal.com/a/P3v43aPLhVdSZ3BS8NaX3?change-id=CxhWFVu6LhGvq85956D1fu">https://nextjournal.com/a/P3v43aPLhVdSZ3BS8NaX3?change-id=CxhWFVu6LhGvq85956D1fu&lt;/a>&lt;/summary>
+&lt;pre>&lt;code class="language-edn">{:article
+{:settings {:numbered? false},
+:nodes
+{&amp;quot;00d83f4f-db54-4f94-9c55-c188c0f11cb7&amp;quot;
+{:id &amp;quot;00d83f4f-db54-4f94-9c55-c188c0f11cb7&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;09fccaa9-72f6-490d-8e2d-df19048a611d&amp;quot;
+{:compute-ref #uuid &amp;quot;f5c9e0e1-e2b7-472f-8af7-c54f043dcb35&amp;quot;,
+:exec-duration 758,
+:id &amp;quot;09fccaa9-72f6-490d-8e2d-df19048a611d&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;0d2cde56-d973-4049-ba70-25f56c4c1df7&amp;quot;
+{:compute-ref #uuid &amp;quot;a22031b2-8c74-49f3-b240-f57854eeb5f2&amp;quot;,
+:exec-duration 4615,
+:id &amp;quot;0d2cde56-d973-4049-ba70-25f56c4c1df7&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 436},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;],
+:stdout-collapsed? true},
+&amp;quot;17899a72-33de-491b-901d-e84dc92c9ab9&amp;quot;
+{:compute-ref #uuid &amp;quot;e3f64704-22b2-41b6-9e86-2a50792e62e8&amp;quot;,
+:exec-duration 881,
+:id &amp;quot;17899a72-33de-491b-901d-e84dc92c9ab9&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;2342aefa-edd9-4274-8aee-fa229d27e5eb&amp;quot;
+{:compute-ref #uuid &amp;quot;68f5460c-5c3d-422a-9a65-2ea459c4566c&amp;quot;,
+:exec-duration 901,
+:id &amp;quot;2342aefa-edd9-4274-8aee-fa229d27e5eb&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;30c23b70-7b03-4ed3-8fe4-c3d7aac6c7fa&amp;quot;
+{:compute-ref #uuid &amp;quot;12efa625-d503-4984-8bd6-79536e1d2c1c&amp;quot;,
+:exec-duration 799,
+:id &amp;quot;30c23b70-7b03-4ed3-8fe4-c3d7aac6c7fa&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 27},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;],
+:stdout-collapsed? true},
+&amp;quot;3109d090-1872-4788-ae47-10aed96fd6d7&amp;quot;
+{:id &amp;quot;3109d090-1872-4788-ae47-10aed96fd6d7&amp;quot;, :kind &amp;quot;code-listing&amp;quot;},
+&amp;quot;3da7f5f5-c87b-4ccf-84d2-0486291a2a4d&amp;quot;
+{:compute-ref #uuid &amp;quot;75ece01b-2eff-4ce7-aa94-7a213cd6cbf8&amp;quot;,
+:exec-duration 974,
+:id &amp;quot;3da7f5f5-c87b-4ccf-84d2-0486291a2a4d&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 14},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;400756d4-7904-4fbb-916f-6db143d4fd0f&amp;quot;
+{:id &amp;quot;400756d4-7904-4fbb-916f-6db143d4fd0f&amp;quot;, :kind &amp;quot;code-listing&amp;quot;},
+&amp;quot;4181e7ac-8b90-422d-b65e-de8ecb110259&amp;quot;
+{:id &amp;quot;4181e7ac-8b90-422d-b65e-de8ecb110259&amp;quot;, :kind &amp;quot;code-listing&amp;quot;},
+&amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;
+{:environment
+[:environment
+{:article/nextjournal.id
+#uuid &amp;quot;5b45dad0-dfdf-4576-9b8c-f90892e74c94&amp;quot;,
+:change/nextjournal.id
+#uuid &amp;quot;5df5da3f-c83a-4296-bc41-0e6e394499d4&amp;quot;,
+:node/id &amp;quot;dab15041-47f1-4ca7-84e2-b4532a4a2f70&amp;quot;}],
+:id &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;,
+:kind &amp;quot;runtime&amp;quot;,
+:language &amp;quot;bash&amp;quot;,
+:type :nextjournal},
+&amp;quot;51a22eb8-4ffd-4e47-8f0e-05ffd18eee2a&amp;quot;
+{:id &amp;quot;51a22eb8-4ffd-4e47-8f0e-05ffd18eee2a&amp;quot;, :kind &amp;quot;code-listing&amp;quot;},
+&amp;quot;6011bd03-c09a-46f6-b664-3b0fd31946e4&amp;quot;
+{:compute-ref #uuid &amp;quot;1db28be9-449b-417d-b8e4-0b5457056aff&amp;quot;,
+:exec-duration 1040,
+:id &amp;quot;6011bd03-c09a-46f6-b664-3b0fd31946e4&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;790cefed-de1e-49fa-85b9-a0151bb9cc6b&amp;quot;
+{:compute-ref #uuid &amp;quot;a2a52cb4-c860-4b68-b2f9-ff45e568d2f1&amp;quot;,
+:exec-duration 1069,
+:id &amp;quot;790cefed-de1e-49fa-85b9-a0151bb9cc6b&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;9ac214c9-b5e9-47b9-8c86-238756e4b33b&amp;quot;
+{:compute-ref #uuid &amp;quot;d79de0c9-05d6-44d9-9bd8-09e35d3216b8&amp;quot;,
+:exec-duration 992,
+:id &amp;quot;9ac214c9-b5e9-47b9-8c86-238756e4b33b&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;9e3a426c-5354-4378-9cd9-a079f7760c23&amp;quot;
+{:id &amp;quot;9e3a426c-5354-4378-9cd9-a079f7760c23&amp;quot;, :kind &amp;quot;file&amp;quot;},
+&amp;quot;af8eba1d-7df2-4260-b96e-ddb022900283&amp;quot;
+{:compute-ref #uuid &amp;quot;27541092-284e-4136-afd0-046259eb264c&amp;quot;,
+:exec-duration 2964,
+:id &amp;quot;af8eba1d-7df2-4260-b96e-ddb022900283&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;],
+:stdout-collapsed? true},
+&amp;quot;b40c55d8-05c3-4a0e-bf77-6f65b8147318&amp;quot;
+{:compute-ref #uuid &amp;quot;df503be9-fc5a-478e-bf3f-623015c2bf4c&amp;quot;,
+:exec-duration 1129,
+:id &amp;quot;b40c55d8-05c3-4a0e-bf77-6f65b8147318&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;cd1d1a54-be1e-4a32-baa4-4d6495c13572&amp;quot;
+{:compute-ref #uuid &amp;quot;ef429098-d2fe-4484-a681-fdefabacec7f&amp;quot;,
+:exec-duration 980,
+:id &amp;quot;cd1d1a54-be1e-4a32-baa4-4d6495c13572&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;],
+:stdout-collapsed? true},
+&amp;quot;d0d84e54-a3b0-4437-8090-b8886b9585ea&amp;quot;
+{:compute-ref #uuid &amp;quot;d6e6fc75-6f70-4443-8a70-09304cb6180d&amp;quot;,
+:exec-duration 1100,
+:id &amp;quot;d0d84e54-a3b0-4437-8090-b8886b9585ea&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;ecb5068e-2d50-4696-ba83-755ef6d198c1&amp;quot;
+{:id &amp;quot;ecb5068e-2d50-4696-ba83-755ef6d198c1&amp;quot;, :kind &amp;quot;code-listing&amp;quot;},
+&amp;quot;ed867748-ecb1-4528-ab4c-05fc6a442561&amp;quot;
+{:id &amp;quot;ed867748-ecb1-4528-ab4c-05fc6a442561&amp;quot;, :kind &amp;quot;code-listing&amp;quot;},
+&amp;quot;f9c1c889-6a12-4a11-8781-319ee9b69a38&amp;quot;
+{:compute-ref #uuid &amp;quot;f3f310ba-317e-456b-802b-3b089c2553a5&amp;quot;,
+:exec-duration 811,
+:id &amp;quot;f9c1c889-6a12-4a11-8781-319ee9b69a38&amp;quot;,
+:kind &amp;quot;code&amp;quot;,
+:output-log-lines {:stdout 2},
+:runtime [:runtime &amp;quot;4534e627-a3df-4694-97c9-39b3fbbe9f90&amp;quot;]},
+&amp;quot;fa294f41-8259-4938-a8ed-a2a12a6cb4cf&amp;quot;
+{:id &amp;quot;fa294f41-8259-4938-a8ed-a2a12a6cb4cf&amp;quot;, :kind &amp;quot;code-listing&amp;quot;}},
+:nextjournal/id #uuid &amp;quot;031428c0-72a8-44c8-a5aa-10fba8f8e34a&amp;quot;,
+:article/change
+{:nextjournal/id #uuid &amp;quot;60db64ef-6234-4eef-bec7-a9f972100980&amp;quot;}}}
+&lt;/code>&lt;/pre>
+&lt;/details></description></item></channel></rss>

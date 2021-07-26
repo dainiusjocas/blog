@@ -66,4 +66,4 @@ math: false
 
 A live notebook used during the presentation can be found (and played with) [here](https://nextjournal.com/test-lmgrep-demo-test/lmgrep-london-information-retrieval-meetup). 
 
-Kudos for the [nextjournal.com](nextjournal.com)!
+Kudos for the [nextjournal.com](https://nextjournal.com/)!

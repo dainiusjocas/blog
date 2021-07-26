@@ -10,7 +10,7 @@ address:
   postcode: '03228'
   country: Lithuania
 
-summary: Kafka, Kafka Connect, Elasticsearch, and Data Consistency 
+summary: Several simple hacks to get more out of your Elasticsearch cluster
 abstract: "
 
 When throwing more hardware into your Elasticsearch cluster doesn't help and your management tells you that this year the search traffic in our eCommerce site will triple.\n

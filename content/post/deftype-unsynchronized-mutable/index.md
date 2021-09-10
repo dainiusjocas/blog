@@ -21,7 +21,7 @@ output:
     toc_depth: 1
 ---
 
-In this post let's take a closer look at this Clojure code snippet and learn what the `^:unsynchronized-mutable` is doing in it.
+In this post let's take a closer look at why the `^:unsynchronized-mutable` is used in this Clojure code snippet.
 
 ```clojure
 (ns user
@@ -42,31 +42,43 @@ In this post let's take a closer look at this Clojure code snippet and learn wha
     (.apply query (Scope/newEmptyScope) data output-container)
     (.getValue output-container)))
 ```
-Note that this code snippet is a bit trimmed down for brevity. The full code can be found [here](https://github.com/dainiusjocas/clj-jq/blob/main/src/jq/core.clj).
+
+Note that this code snippet is a bit trimmed down for clarity. 
+The full code can be found [here](https://github.com/dainiusjocas/clj-jq/blob/main/src/jq/core.clj).
 
 ## Introduction
 
 I was working on [`clj-jq`](https://github.com/dainiusjocas/clj-jq): a Clojure library which is intended to be just a very thin wrapper for the [`jackson-jq`](https://github.com/eiiches/jackson-jq) Java library.
-The goal of `clj-jq` library is to embed a `jq` processor directly into the application. 
-The exact use cases are for future blog posts.
+The goal of `clj-jq` library is to embed a [`jq`](https://stedolan.github.io/jq/) processor directly into the application. 
+The exact use cases are left for future blog posts.
 
 ## Wrapper 
 
-The `jackson-jq` provides a nice example [class](https://github.com/eiiches/jackson-jq/blob/develop/1.x/jackson-jq/src/test/java/examples/Usage.java) that helped me to start with the wrapper.
-A straightforward approach to create a Clojure library out of a similar Java class is to "translate" the Java code to Clojure using the [Java interop](https://clojure.org/reference/java_interop) more or less verbatim, parameterize the hardcoded parts, and you'd be mostly done.
+The `jackson-jq` provides a nice example [class](https://github.com/eiiches/jackson-jq/blob/develop/1.x/jackson-jq/src/test/java/examples/Usage.java) that helped me to start implementing the wrapper.
+I've taken a straightforward approach to create a Clojure library: just "translate" the Java code to Clojure using the [Java interop](https://clojure.org/reference/java_interop) more or less verbatim, parameterize the hardcoded parts, refactor here and there, and I'd be mostly done.
 
-The "translation" was as expected until I had to deal with a code that implements the [`Output`](https://github.com/eiiches/jackson-jq/blob/6bf785ddb29618f53dafe2f336cd80bdf18a6b45/jackson-jq/src/main/java/net/thisptr/jackson/jq/Output.java) interface:
+The "translation" went as expected until I had to deal with a code that implements the [`Output`](https://github.com/eiiches/jackson-jq/blob/6bf785ddb29618f53dafe2f336cd80bdf18a6b45/jackson-jq/src/main/java/net/thisptr/jackson/jq/Output.java) interface:
 ```java
 final List<JsonNode> out = new ArrayList<>();
 q.apply(childScope, in, out::add);
 ```
-In the example an `ArrayList` and some Java magic was used (we'll talk about what and why a the [appendix](#appendix)).
-I've "translated" the code, it worked, but I wasn't happy about it.
+In the example an `ArrayList` and some Java magic was used (we'll talk about what and why in the [appendix](#appendix)).
+Since Clojure function doesn't implement `Output` I can't pass a function, therefore I've "translated" the code using `reify` as seen below:
+```clojure
+(defn query-json-node [^JsonNode data ^JsonQuery query]
+  (let [array-list (ArrayList.)]
+    (.apply query (Scope/newChildScope root-scope) data
+            (reify Output
+                   (emit [this json-node] (.add array-list json-node))))
+    (.writeValueAsString mapper ^JsonNode (.get array-list 0))))
+```
+it worked, but I wasn't happy about it.
 
-Using an `ArrayList` in such a code might be OK for a simple example but for a library something more specialized is desired because of several reasons:
+Using an `ArrayList` in such function might be OK for an example.
+But for a library something more specialized is desired because of several reasons:
 
 - the `ArrayList` will always hold just one value;
-- allocating an `ArrayList` is not super cheap;
+- allocating an `ArrayList` and `reify`ing is not super cheap;
 
 It got me thinking about how to make something better.
 
@@ -77,39 +89,39 @@ The requirements for the `Output` implementation:
 - a specialized and efficient class;
 - that class has to act as a mutable[^1] container that holds one value;
 
-Efficiency is desired because the library is intended to be used in "hot spots" of the applications.
+Efficiency is desired because the library is intended to be used in "hot spots" of an application.
 
-Before starting to work on `clj-jq` I expected the work would not require writing any Java code because that complicates the release of the library.
-Therefore, I wanted to implement my `Output` class in pure Clojure.
-Also, `gen-class` always feels a bit too much for this problem.
+Before starting to work on `clj-jq` I expected the work would not require writing any Java code because that would complicate the release of the library.
+Therefore, I aimed to implement my `Output` class in Clojure.
+Also, `gen-class` feels a bit "too much" for this little problem.
 
 ## Implementation
 
 The `Output` interface defines behaviour, therefore I've chosen the [`deftype`](https://clojuredocs.org/clojure.core/deftype).
 The implementation class needs mutable state to hold one value.
 `deftype` has two options for mutability of fields: `volatile-mutable` and `unsynchronized-mutable`.
-The docs advice that the usage of both options is discouraged and are for experts only. 
-I skipped the first part of the advice because I wanted to learn a lesson.
-For the second part my thinking was that if I used it "correctly" I could consider myself an expert :-)
+The `deftype` docstring advice that the usage of both options is discouraged and are for "experts only". 
+I skipped the first part of the advice because I wanted to learn a good lesson.
+For the second part my thinking was that if I used the options "correctly" I could consider myself an "expert" :-)
 
 ![Expert](grumpy-expert.jpg)
 
 What are the implications of those two `deftype` field options:
 
-- `volatile-mutable` means that field is marked to be `volatile`. Volatile in Java means that the variable is stored in the main memory and **not** in the CPU cache. This guarantees multi-threaded applications to read the latest values of a variable. Note that writes are not atomic. 
+- `volatile-mutable` means that field is going to be marked as [`volatile`](https://www.baeldung.com/java-volatile).
+Volatile in Java means that the variable is stored in the main memory and **not** in the CPU cache. 
+This provides a data consistency guarantee that all threads will observe the updated value immediately[^volatile]. 
 Therefore, the `volatile-mutable` field is OK to be used when the field is going to be written to by one thread and read from multiple threads.
 - The field marked with `unsynchronized-mutable` option is backed by a regular Java mutable field.
-In contrast to `volatile-mutable`, the value might be stored in the CPU cache.
+In contrast to `volatile-mutable`, the `unsynchronized-mutable` value might be stored in the CPU cache.
 Therefore, `unsynchronized-mutable` field is OK when it is meant to be read and written only by one thread[^2].
 
-Since the scope in which my container class is going to be used is small and only single threaded,
+Since the scope in which my container class is going to be used is small and short-lived (can be considered as an internal implementation detail) and not multi-threaded,
 I can choose an option that promises a better performance: `unsynchronized-mutable`[^3].
-
-The resulting `Output` type definition:
 
 ## Go back to the code
 
-The most interesting bit is the `deftype`:
+The most interesting bit of the entire snippet is the `deftype`:
 
 ```clojure
 (deftype OutputContainer [^:unsynchronized-mutable ^JsonNode container]
@@ -120,8 +132,8 @@ The most interesting bit is the `deftype`:
 ```
 
 The class generated by `deftype` will be named `OutputContainer`.
-The class has one mutable field: `container` that is of `JsonNode` type. 
-By declaring method mutable deftype generates `set!` function to mutate the mutable field.
+It has one mutable field: `container` that is hinted to be of `JsonNode` type.
+By declaring a method mutable deftype generates the [`set!`](https://clojuredocs.org/clojure.core/set!) assignment special form to allow mutation of the field.
 
 `OutputContainer` is in the scope of one function:
 
@@ -139,8 +151,9 @@ Finally, we take out the value from the `output-container` instance.
 
 ## Summary
 
-`unsynchronized-mutable` is rarely used in the wild: only [776](https://github.com/search?l=Clojure&q=unsynchronized-mutable&type=Code) out of [13,362](https://github.com/search?l=Clojure&q=deftype&type=Code) uses of `deftype` according to GitHub code search as of 2021-09-09.
-But when we do understand the implications, and we need exactly what the option provides, we can go ahead and use it. Don't forget to test the code.
+`unsynchronized-mutable` is relatively rarely used in the wild: only [776](https://github.com/search?l=Clojure&q=unsynchronized-mutable&type=Code) out of [13,362](https://github.com/search?l=Clojure&q=deftype&type=Code) uses of `deftype` according to GitHub code search as of 2021-09-09.
+But when we do understand the implications, and we need exactly what the option provides, we can go ahead and use it. 
+And don't forget to test your code!
 
 ## <a id="appendix" />Appendix
 
@@ -186,3 +199,4 @@ We can see that types match, therefore method reference to `out::add` can be use
 [^3]: A proper discussion on [`deftype` mutability](https://stackoverflow.com/questions/21127636/what-are-the-semantic-implications-of-volatile-mutable-versus-unsynchronized-m) and [here](https://stackoverflow.com/questions/3132931/mutable-fields-in-clojure-deftype)
 [^4]: Image credits to https://www.pinterest.com/pin/703476404269452082/ 
 [^5]: For example [here](https://github.com/eiiches/jackson-jq/blob/6bf785ddb29618f53dafe2f336cd80bdf18a6b45/jackson-jq/src/main/java/net/thisptr/jackson/jq/internal/tree/ArrayConstruction.java#L29)
+[^volatile]: Note that writes are not atomic for the volatile value.

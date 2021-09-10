@@ -49,7 +49,7 @@ The full code can be found [here](https://github.com/dainiusjocas/clj-jq/blob/ma
 ## Introduction
 
 I was working on [`clj-jq`](https://github.com/dainiusjocas/clj-jq): a Clojure library which is intended to be just a very thin wrapper for the [`jackson-jq`](https://github.com/eiiches/jackson-jq) Java library.
-The goal of `clj-jq` library is to embed a [`jq`](https://stedolan.github.io/jq/) processor directly into the application. 
+The goal of `clj-jq` library is to embed a [`jq`](https://stedolan.github.io/jq/) processor directly into the application that can be compiled with the GraalVM `native-image`.
 The exact use cases are left for future blog posts.
 
 ## Wrapper 

@@ -1,4 +1,151 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Clojure | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/clojure/</link><atom:link href="https://www.jocas.lt/blog/categories/clojure/index.xml" rel="self" type="application/rss+xml"/><description>Clojure</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Sat, 21 Mar 2020 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Clojure</title><link>https://www.jocas.lt/blog/categories/clojure/</link></image><item><title>Deploy babashka script to AWS Lambda</title><link>https://www.jocas.lt/blog/post/babashka-aws-lambda/</link><pubDate>Sat, 21 Mar 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/babashka-aws-lambda/</guid><description>&lt;p>TL;DR&lt;/p>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Clojure | Dainius Jocas</title><link>https://www.jocas.lt/blog/categories/clojure/</link><atom:link href="https://www.jocas.lt/blog/categories/clojure/index.xml" rel="self" type="application/rss+xml"/><description>Clojure</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Thu, 09 Sep 2021 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Clojure</title><link>https://www.jocas.lt/blog/categories/clojure/</link></image><item><title>Clojure deftype with `unsynchronized-mutable`</title><link>https://www.jocas.lt/blog/post/deftype-unsynchronized-mutable/</link><pubDate>Thu, 09 Sep 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/deftype-unsynchronized-mutable/</guid><description>&lt;p>In this post let&amp;rsquo;s take a closer look at why the &lt;code>^:unsynchronized-mutable&lt;/code> is used in this Clojure code snippet and learn some Java in the process.&lt;/p>
+&lt;pre>&lt;code class="language-clojure">(ns user
+(:import (net.thisptr.jackson.jq JsonQuery Scope Output)
+(com.fasterxml.jackson.databind JsonNode)))
+(definterface IGetter
+(^com.fasterxml.jackson.databind.JsonNode getValue []))
+(deftype OutputContainer [^:unsynchronized-mutable ^JsonNode container]
+Output
+(emit [_ output-json-node] (set! container output-json-node))
+IGetter
+(getValue [_] container))
+(defn query-json-node [^JsonNode data ^JsonQuery query]
+(let [output-container (OutputContainer. nil)]
+(.apply query (Scope/newEmptyScope) data output-container)
+(.getValue output-container)))
+&lt;/code>&lt;/pre>
+&lt;p>Note that this code snippet is a bit trimmed down for clarity.
+The full code can be found &lt;a href="https://github.com/dainiusjocas/clj-jq/blob/main/src/jq/core.clj">here&lt;/a>.&lt;/p>
+&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>I was working on &lt;a href="https://github.com/dainiusjocas/clj-jq">&lt;code>clj-jq&lt;/code>&lt;/a>:
+a Clojure library whose goal is to make it easy to embed a &lt;a href="https://stedolan.github.io/jq/">&lt;code>jq&lt;/code>&lt;/a> processor directly into an application and that this application can be compiled with the GraalVM &lt;code>native-image&lt;/code>.
+&lt;code>clj-jq&lt;/code> was intended to be a thin wrapper for the &lt;a href="https://github.com/eiiches/jackson-jq">&lt;code>jackson-jq&lt;/code>&lt;/a> Java library.
+The exact use cases of the &lt;code>clj-jq&lt;/code> are left out for future blog posts.&lt;/p>
+&lt;h2 id="wrapper">Wrapper&lt;/h2>
+&lt;p>The &lt;code>jackson-jq&lt;/code> provides a nice example &lt;a href="https://github.com/eiiches/jackson-jq/blob/develop/1.x/jackson-jq/src/test/java/examples/Usage.java">class&lt;/a> that helped me to start implementing the wrapper.
+I&amp;rsquo;ve taken a straightforward approach to create a Clojure library: just &amp;ldquo;translate&amp;rdquo; the necessary Java code to Clojure using the &lt;a href="https://clojure.org/reference/java_interop">Java interop&lt;/a> more or less verbatim, parameterize the hardcoded parts, refactor here and there, and the result would be a new library.&lt;/p>
+&lt;p>The &amp;ldquo;translation&amp;rdquo; went as expected until I had to deal with a code that implements the &lt;a href="https://github.com/eiiches/jackson-jq/blob/6bf785ddb29618f53dafe2f336cd80bdf18a6b45/jackson-jq/src/main/java/net/thisptr/jackson/jq/Output.java">&lt;code>Output&lt;/code>&lt;/a> interface:&lt;/p>
+&lt;pre>&lt;code class="language-java">final List&amp;lt;JsonNode&amp;gt; out = new ArrayList&amp;lt;&amp;gt;();
+q.apply(childScope, in, out::add);
+&lt;/code>&lt;/pre>
+&lt;p>In the example an instance of &lt;code>ArrayList&lt;/code> and some Java magic was used (we&amp;rsquo;ll talk about what and why in the &lt;a href="#appendix">appendix&lt;/a>).
+Since Clojure functions doesn&amp;rsquo;t implement &lt;code>Output&lt;/code> interface I can&amp;rsquo;t pass a function, therefore I&amp;rsquo;ve &amp;ldquo;translated&amp;rdquo; the code using &lt;code>reify&lt;/code> approach as shown below:&lt;/p>
+&lt;pre>&lt;code class="language-clojure">(defn query-json-node [^JsonNode data ^JsonQuery query]
+(let [array-list (ArrayList.)]
+(.apply query (Scope/newChildScope root-scope) data
+(reify Output
+(emit [this json-node] (.add array-list json-node))))
+(.writeValueAsString mapper ^JsonNode (.get array-list 0))))
+&lt;/code>&lt;/pre>
+&lt;p>it worked, but I wasn&amp;rsquo;t happy about it.&lt;/p>
+&lt;p>Using an &lt;code>ArrayList&lt;/code> in such a function might be OK for an example.
+But for a library something more specialized is desired because of several reasons:&lt;/p>
+&lt;ul>
+&lt;li>the &lt;code>ArrayList&lt;/code> will always hold just one value;&lt;/li>
+&lt;li>allocating an &lt;code>ArrayList&lt;/code> and &lt;code>reify&lt;/code>ing is not super cheap;&lt;/li>
+&lt;/ul>
+&lt;p>It got me thinking about how to make something better.&lt;/p>
+&lt;h2 id="requirements">Requirements&lt;/h2>
+&lt;p>The requirements for the &lt;code>Output&lt;/code> implementation:&lt;/p>
+&lt;ul>
+&lt;li>a specialized and efficient class;&lt;/li>
+&lt;li>that class has to act as a mutable&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup> container that holds one value;&lt;/li>
+&lt;/ul>
+&lt;p>Efficiency is desired because the library is intended to be used in &amp;ldquo;hot spots&amp;rdquo; of an application.&lt;/p>
+&lt;p>Before starting to work on &lt;code>clj-jq&lt;/code> I expected that the work would not require writing any Java code because that would complicate the release of the library.
+Therefore, I aimed to implement my &lt;code>Output&lt;/code> class in Clojure.
+Also, &lt;code>gen-class&lt;/code> feels a bit &amp;ldquo;too much&amp;rdquo; for this little problem.&lt;/p>
+&lt;h2 id="implementation">Implementation&lt;/h2>
+&lt;p>The &lt;code>Output&lt;/code> interface defines behaviour, therefore I&amp;rsquo;ve chosen the &lt;a href="https://clojuredocs.org/clojure.core/deftype">&lt;code>deftype&lt;/code>&lt;/a>.
+The implementation class needs mutable state to hold one value.
+&lt;code>deftype&lt;/code> has two options for mutability of fields: &lt;code>volatile-mutable&lt;/code> and &lt;code>unsynchronized-mutable&lt;/code>.
+The &lt;code>deftype&lt;/code> docstring advices that the usage of both options is discouraged and are for &amp;ldquo;experts only&amp;rdquo;.
+I skipped the first part of the advice because I wanted to learn a good lesson.
+For the second part my thinking was that if I used the options &amp;ldquo;correctly&amp;rdquo; I could consider myself an &amp;ldquo;expert&amp;rdquo; :-)&lt;/p>
+&lt;p>&lt;img src="grumpy-expert.jpg" alt="Expert">&lt;/p>
+&lt;p>What are the implications of those two &lt;code>deftype&lt;/code> field options:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>volatile-mutable&lt;/code> means that field is going to be marked as &lt;a href="https://www.baeldung.com/java-volatile">&lt;code>volatile&lt;/code>&lt;/a>.
+Volatile in Java means that the variable is stored in the main memory and &lt;strong>not&lt;/strong> in the CPU cache.
+This provides a data consistency guarantee that all threads will observe the updated value immediately&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>.
+Therefore, the &lt;code>volatile-mutable&lt;/code> option is OK to be used when the field is going to be written to by one thread and read from multiple threads.&lt;/li>
+&lt;li>The field marked with &lt;code>unsynchronized-mutable&lt;/code> option is backed by a regular Java mutable field.
+In contrast to &lt;code>volatile-mutable&lt;/code>, the &lt;code>unsynchronized-mutable&lt;/code> value might be stored in the CPU cache.
+Therefore, &lt;code>unsynchronized-mutable&lt;/code> field is OK when used in single-threaded&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> contexts.&lt;/li>
+&lt;/ul>
+&lt;p>Since the scope in which my container class is going to be used is small and short-lived (can be considered as an internal implementation detail) and not multi-threaded,
+I can choose an option that promises a better performance: &lt;code>unsynchronized-mutable&lt;/code>&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>.&lt;/p>
+&lt;h2 id="go-back-to-the-code">Go back to the code&lt;/h2>
+&lt;p>The most interesting bit of the entire snippet is the &lt;code>deftype&lt;/code>:&lt;/p>
+&lt;pre>&lt;code class="language-clojure">(deftype OutputContainer [^:unsynchronized-mutable ^JsonNode container]
+Output
+(emit [_ output-json-node] (set! container output-json-node))
+IGetter
+(getValue [_] container))
+&lt;/code>&lt;/pre>
+&lt;p>The class generated by &lt;code>deftype&lt;/code> will be named &lt;code>OutputContainer&lt;/code>.
+It has one &lt;strong>mutable&lt;/strong> field: &lt;code>container&lt;/code> that is hinted to be of &lt;code>JsonNode&lt;/code> type.
+By declaring a method mutable deftype generates the &lt;a href="https://clojuredocs.org/clojure.core/set!">&lt;code>set!&lt;/code>&lt;/a> assignment special form to allow mutation of the field.&lt;/p>
+&lt;p>Usage example of the &lt;code>OutputContainer&lt;/code>:&lt;/p>
+&lt;pre>&lt;code class="language-clojure">(defn query-json-node [^JsonNode data ^JsonQuery query]
+(let [output-container (OutputContainer. nil)]
+(.apply query (Scope/newEmptyScope) data output-container)
+(.getValue output-container)))
+&lt;/code>&lt;/pre>
+&lt;p>In the function &lt;code>query-json-node&lt;/code> we create an instance of the &lt;code>OutputContainer&lt;/code>.
+Then pass it to &lt;code>apply&lt;/code> method of the &lt;code>JsonQuery&lt;/code>.
+Somewhere in the &lt;code>apply&lt;/code> the &lt;code>Output::emit&lt;/code> will be called&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup>.
+Finally, we take out the value of &lt;code>JsonNode&lt;/code> type from the &lt;code>output-container&lt;/code> instance.&lt;/p>
+&lt;h2 id="summary">Summary&lt;/h2>
+&lt;p>&lt;code>unsynchronized-mutable&lt;/code> is relatively rarely used in the wild: only &lt;a href="https://github.com/search?l=Clojure&amp;amp;q=unsynchronized-mutable&amp;amp;type=Code">776&lt;/a> out of &lt;a href="https://github.com/search?l=Clojure&amp;amp;q=deftype&amp;amp;type=Code">13,362&lt;/a> uses of &lt;code>deftype&lt;/code> according to GitHub code search as of 2021-09-09.
+But when we do understand the implications, and we need exactly what the option provides, we can go ahead and use it despite what the docstring says.
+And don&amp;rsquo;t forget to test your code!&lt;/p>
+&lt;h2 id="a-idappendix-appendix">&lt;a id="appendix" />Appendix&lt;/h2>
+&lt;p>Once again, let&amp;rsquo;s look at this piece of code:&lt;/p>
+&lt;pre>&lt;code class="language-java">final List&amp;lt;JsonNode&amp;gt; out = new ArrayList&amp;lt;&amp;gt;();
+q.apply(childScope, in, out::add);
+&lt;/code>&lt;/pre>
+&lt;p>Here method reference to &lt;code>add&lt;/code> of a &lt;code>List&amp;lt;JsonNode&amp;gt;&lt;/code> object is used as an argument to a method that expects &lt;code>Output&lt;/code> type.
+How does it work?&lt;/p>
+&lt;h3 id="a-bit-of-java-theory">A bit of Java theory&lt;/h3>
+&lt;p>Any interface in Java with a SAM (Single Abstract Method) is a &lt;a href="https://www.baeldung.com/java-8-functional-interfaces">&lt;strong>functional interface&lt;/strong>&lt;/a>.
+And for an argument of a functional interface type one can provide either:&lt;/p>
+&lt;ul>
+&lt;li>a class object that implements the interface,&lt;/li>
+&lt;li>lambda expression.&lt;/li>
+&lt;/ul>
+&lt;p>A &lt;a href="https://docs.oracle.com/javase/tutorial/java/javaOO/methodreferences.html">method reference&lt;/a> can replace a lambda expression when passed and returned value types match.
+You can use whichever is &lt;a href="https://stackoverflow.com/a/24493905/1728133">easier to read&lt;/a>.&lt;/p>
+&lt;h3 id="why-does-it-work-anyway">Why does it work anyway?&lt;/h3>
+&lt;p>The &lt;a href="https://github.com/eiiches/jackson-jq/blob/6bf785ddb29618f53dafe2f336cd80bdf18a6b45/jackson-jq/src/main/java/net/thisptr/jackson/jq/Output.java">&lt;code>Output&lt;/code>&lt;/a> is an interface that provides just one method &lt;code>emit&lt;/code> (default methods doesn&amp;rsquo;t count).
+Therefore, it is a functional interface (however, not annotated as such).&lt;/p>
+&lt;p>We can provide a lambda expression where a functional interface type is expected.
+Also, in the same place we can provide a method reference whose types match the expected input-output types.&lt;/p>
+&lt;p>What are the expected types for &lt;code>Output::emit&lt;/code>?
+&lt;code>JsonNode&lt;/code> for input and &lt;code>void&lt;/code> for output.&lt;/p>
+&lt;p>When a variable is of type &lt;code>List&amp;lt;JsonNode&amp;gt;&lt;/code> then the &lt;code>add&lt;/code> method accepts &lt;code>JsonNode&lt;/code> type and returns &lt;code>void&lt;/code>.&lt;/p>
+&lt;p>We can see that types match, therefore method reference to &lt;code>out::add&lt;/code> can be used when &lt;code>Output&lt;/code> is required. Voila!&lt;/p>
+&lt;h2 id="footnotes">Footnotes&lt;/h2>
+&lt;section class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1" role="doc-endnote">
+&lt;p>Mutable and not-shared might be OK. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2" role="doc-endnote">
+&lt;p>Note that writes are not atomic for the volatile value. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3" role="doc-endnote">
+&lt;p>Consult the &lt;a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4">Java Memory Model&lt;/a> docs to learn more. &lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:4" role="doc-endnote">
+&lt;p>A proper discussion on &lt;a href="https://stackoverflow.com/questions/21127636/what-are-the-semantic-implications-of-volatile-mutable-versus-unsynchronized-m">&lt;code>deftype&lt;/code> mutability&lt;/a> and &lt;a href="https://stackoverflow.com/questions/3132931/mutable-fields-in-clojure-deftype">here&lt;/a> &lt;a href="#fnref:4" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:5" role="doc-endnote">
+&lt;p>For example &lt;a href="https://github.com/eiiches/jackson-jq/blob/6bf785ddb29618f53dafe2f336cd80bdf18a6b45/jackson-jq/src/main/java/net/thisptr/jackson/jq/internal/tree/ArrayConstruction.java#L29">here&lt;/a> &lt;a href="#fnref:5" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/section></description></item><item><title>Deploy babashka script to AWS Lambda</title><link>https://www.jocas.lt/blog/post/babashka-aws-lambda/</link><pubDate>Sat, 21 Mar 2020 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/babashka-aws-lambda/</guid><description>&lt;p>TL;DR&lt;/p>
 &lt;p>I&amp;rsquo;ve managed to package a simple &lt;a href="https://github.com/borkdude/babashka">babashka&lt;/a> script to an AWS Lambda Custom Runtime. &lt;a href="https://github.com/dainiusjocas/babashka-lambda">Here&lt;/a> is the code, try for yourself.&lt;/p>
 &lt;h2 id="motivation">Motivation&lt;/h2>
 &lt;p>Wouldn&amp;rsquo;t it be great to deploy little Clojure code snippets to Custom Lambda Runtime? The main benefits would be:&lt;/p>

@@ -1,4 +1,1242 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/tags/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>Elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2021 Dainius Jocas</copyright><lastBuildDate>Fri, 23 Jul 2021 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Elasticsearch</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link></image><item><title>Make Elasticsearch Query Profiling Faster in Kibana</title><link>https://www.jocas.lt/blog/post/kibana-profile-many-shards-hack/</link><pubDate>Fri, 23 Jul 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kibana-profile-many-shards-hack/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Elasticsearch | Dainius Jocas</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link><atom:link href="https://www.jocas.lt/blog/tags/elasticsearch/index.xml" rel="self" type="application/rss+xml"/><description>Elasticsearch</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2022 Dainius Jocas</copyright><lastBuildDate>Wed, 12 Jan 2022 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Elasticsearch</title><link>https://www.jocas.lt/blog/tags/elasticsearch/</link></image><item><title>Entity Resolution with Opensearch/Elasticsearch</title><link>https://www.jocas.lt/blog/post/entity-resolution/</link><pubDate>Wed, 12 Jan 2022 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/entity-resolution/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+&lt;p>The &lt;a href="https://en.wikipedia.org/wiki/Record_linkage">entity resolution&lt;/a> can be implemented as a search application and if the requirements are not too crazy then Opensearch/Elasticsearch is good enough.&lt;/p>
+&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;p>Say that our company have a curated registry of organizations (only organization names with the number of employees) conveniently indexed in the OpenSearch/Elasticsearch.
+Our employer acquired a direct competitor with their own nice little registry (only organization names with their addresses), and we were tasked to integrate the new registry with our old registry, i.e. to perform an entity resolution.
+Our task is to iterate through the new registry record by record and try to map them to our &amp;ldquo;Golden registry&amp;rdquo;.
+Unfortunately, the only overlapping data is organization names and our matching needs to be based mostly on the organization name.
+Let&amp;rsquo;s implement organization name matching by text similarity directly with Opensearch/Elasticsearch.&lt;/p>
+&lt;h2 id="requirements">Requirements&lt;/h2>
+&lt;p>Say that we were given these organization name similarity rules in the descending order of importance.
+Let&amp;rsquo;s have an example query &amp;ldquo;Apple&amp;rdquo; in mind as we go:&lt;/p>
+&lt;ol>
+&lt;li>Exact match, e.g. &amp;ldquo;Apple&amp;rdquo;&lt;/li>
+&lt;li>Exact first word match, e.g. &amp;ldquo;&lt;strong>Apple&lt;/strong> Computers&amp;rdquo;&lt;/li>
+&lt;li>Exact not first word match, e.g. &amp;ldquo;Big &lt;strong>Apple&lt;/strong> Company&amp;rdquo;&lt;/li>
+&lt;li>Partial first word match - start, e.g. &amp;ldquo;&lt;strong>Apple&lt;/strong>sauce Company&amp;rdquo;&lt;/li>
+&lt;li>Partial first word match - end, e.g. &amp;ldquo;Pine&lt;strong>apple&lt;/strong> Manufacturing&amp;rdquo;&lt;/li>
+&lt;li>Partial not first word match - end, e.g. &amp;ldquo;Canadian Bake&lt;strong>apple&lt;/strong>&amp;rdquo;&lt;/li>
+&lt;li>Fuzzy, e.g. &amp;ldquo;&lt;strong>Apply&lt;/strong>&amp;rdquo;&lt;/li>
+&lt;/ol>
+&lt;p>On top of that, we should be able to add other signals that could change the ordering,
+e.g. the number of employees: the more employees the matching organization has the higher its matching score.&lt;/p>
+&lt;p>&amp;ldquo;Applesauce Company&amp;rdquo; with 100 employees should be lower than &amp;ldquo;Pineapple Manufacturing&amp;rdquo; with 100000 employees despite that
+the rule of a &lt;em>partial first word match at the start&lt;/em> has a higher name similarity than the &lt;em>partial not first word match at the end&lt;/em>.&lt;/p>
+&lt;p>And yes, the entity resolution should be implemented only with features provided by Opensearch/Elasticsearch.&lt;/p>
+&lt;p>NOTE: the proposed solution is not production ready, use the examples wisely.&lt;/p>
+&lt;h3 id="additional-notes-for-development">Additional notes for development&lt;/h3>
+&lt;p>To make the development easier we also want:&lt;/p>
+&lt;ul>
+&lt;li>to know which rule matched for each hit we can leverage &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/6.8/search-request-named-queries-and-filters.html">named queries&lt;/a> feature (or try the highlighting&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>),&lt;/li>
+&lt;li>give each rule a normalized score (&lt;a href="https://en.wikipedia.org/wiki/Tf%E2%80%93idf">TF-IDF&lt;/a> is hard to normalize),&lt;/li>
+&lt;li>matching of strings should be case-insensitive,&lt;/li>
+&lt;li>Index (conveniently names &lt;code>organizations&lt;/code>) contains the sample organizations list (extracted from the requirements examples),&lt;/li>
+&lt;li>Work out the examples in Kibana/Dashboards,&lt;/li>
+&lt;/ul>
+&lt;p>The indexing of organizations can be done with this simple command:&lt;/p>
+&lt;pre>&lt;code class="language-text">PUT organizations/_bulk
+{ &amp;quot;index&amp;quot; : { &amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot; } }
+{ &amp;quot;name&amp;quot; : &amp;quot;Apple&amp;quot; }
+{ &amp;quot;index&amp;quot; : { &amp;quot;_id&amp;quot; : &amp;quot;2&amp;quot; } }
+{ &amp;quot;name&amp;quot; : &amp;quot;Apple Computers&amp;quot; }
+{ &amp;quot;index&amp;quot; : { &amp;quot;_id&amp;quot; : &amp;quot;3&amp;quot; } }
+{ &amp;quot;name&amp;quot; : &amp;quot;Big Apple Company&amp;quot; }
+{ &amp;quot;index&amp;quot; : { &amp;quot;_id&amp;quot; : &amp;quot;4&amp;quot; } }
+{ &amp;quot;name&amp;quot; : &amp;quot;Applesauce Company&amp;quot; }
+{ &amp;quot;index&amp;quot; : { &amp;quot;_id&amp;quot; : &amp;quot;5&amp;quot; } }
+{ &amp;quot;name&amp;quot; : &amp;quot;Pineapple Manufacturing&amp;quot; }
+{ &amp;quot;index&amp;quot; : { &amp;quot;_id&amp;quot; : &amp;quot;6&amp;quot; } }
+{ &amp;quot;name&amp;quot; : &amp;quot;Canadian Bakeapple&amp;quot; }
+{ &amp;quot;index&amp;quot; : { &amp;quot;_id&amp;quot; : &amp;quot;7&amp;quot; } }
+{ &amp;quot;name&amp;quot; : &amp;quot;Apply&amp;quot; }
+&lt;/code>&lt;/pre>
+&lt;h2 id="implementation-strategy">Implementation Strategy&lt;/h2>
+&lt;p>Let&amp;rsquo;s split the implementation into 3 parts:&lt;/p>
+&lt;ul>
+&lt;li>implement the organization name matching requirements,&lt;/li>
+&lt;li>implement the scoring signal based on the number of employees,&lt;/li>
+&lt;li>fine-tune the scoring function.&lt;/li>
+&lt;/ul>
+&lt;h2 id="string-matching-implementation">String Matching Implementation&lt;/h2>
+&lt;p>In the following sections we&amp;rsquo;ll implement all string matching signals with the OpenSearch/Elasticsearch text analysis features.
+I&amp;rsquo;ll work out each requirement in isolation.
+For each rule we will define a subfield of the &lt;code>name&lt;/code> attribute with an analyzer and a corresponding query clause.&lt;/p>
+&lt;h3 id="exact-match">Exact match&lt;/h3>
+&lt;p>Exact matching is rather simple to implement, just use &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html#keyword-field-type">&lt;code>keyword&lt;/code>&lt;/a> datatype with a &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/normalizer.html">normalizer&lt;/a> that &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-lowercase-tokenfilter.html">lowercases&lt;/a> the string.&lt;/p>
+&lt;p>Index configuration:&lt;/p>
+&lt;pre>&lt;code class="language-kibana">PUT organizations
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;normalizer&amp;quot;: {
+&amp;quot;lowercased_keyword&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;custom&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;
+]
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;keyword_lowercased&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;normalizer&amp;quot;: &amp;quot;lowercased_keyword&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Query:&lt;/p>
+&lt;pre>&lt;code class="language-kibana">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;term&amp;quot;: {
+&amp;quot;name.keyword_lowercased&amp;quot;: {
+&amp;quot;value&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;exact_match&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 7
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Matches exactly one organization:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot; : 3,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 7.0,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 7.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;exact_match&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;h3 id="exact-first-word-match">Exact first word match&lt;/h3>
+&lt;p>With this requirement we want the query to match the first word of the organization name&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>.&lt;/p>
+&lt;p>We can implement the requirement by simply indexing only the first token.
+To achieve it we could use the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-limit-token-count-tokenfilter.html">&lt;code>limit&lt;/code>&lt;/a> token filter.&lt;/p>
+&lt;p>Index configuration:&lt;/p>
+&lt;pre>&lt;code class="language-text">PUT organizations
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;standard_one_token_limit&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;
+]
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;first_token&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;standard_one_token_limit&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>We leverage the fact that by default the &lt;code>limit&lt;/code> token filter defaults &lt;code>max_token_count&lt;/code> parameters to 1 token.
+And we don&amp;rsquo;t need to define a new token filter (key damage to the keyboard, yay).&lt;/p>
+&lt;p>Query:&lt;/p>
+&lt;pre>&lt;code class="language-text">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;term&amp;quot;: {
+&amp;quot;name.first_token&amp;quot;: {
+&amp;quot;value&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Exact first word match&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 6
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Hits:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 2,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 6.0,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 6.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Exact first word match&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;2&amp;quot;,
+&amp;quot;_score&amp;quot; : 6.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple Computers&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Exact first word match&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Note that not only &amp;ldquo;Apple Computers&amp;rdquo; matched but also &amp;ldquo;Apple&amp;rdquo; matched.
+This makes sense because &amp;ldquo;Apple&amp;rdquo; has only one word it is &lt;em>the first word&lt;/em>.&lt;/p>
+&lt;p>If we wanted to exclude the &amp;ldquo;Apple&amp;rdquo; match we could combine the &lt;code>Exact first word match&lt;/code> with the &lt;code>Exact match&lt;/code> and construct a bool query, e.g.:&lt;/p>
+&lt;pre>&lt;code class="language-text">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;bool&amp;quot;: {
+&amp;quot;_name&amp;quot;: &amp;quot;Exact first word match&amp;quot;,
+&amp;quot;must&amp;quot;: [
+{
+&amp;quot;term&amp;quot;: {
+&amp;quot;name.first_token&amp;quot;: {
+&amp;quot;value&amp;quot;: &amp;quot;Apple&amp;quot;
+}
+}
+}
+],
+&amp;quot;must_not&amp;quot;: [
+{
+&amp;quot;term&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;value&amp;quot;: &amp;quot;Apple&amp;quot;
+}
+}
+}
+]
+}
+},
+&amp;quot;boost&amp;quot;: 6
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>For similar situations we could act similarly but let&amp;rsquo;s keep it simple.&lt;/p>
+&lt;h3 id="exact-not-first-word-match">Exact not first word match&lt;/h3>
+&lt;p>E.g.: query &amp;ldquo;Apple&amp;rdquo; should match &amp;ldquo;Big Apple Company&amp;rdquo;.
+The interesting bit is how to differentiate this rule from the &lt;code>Exact first word match&lt;/code>?
+As an implementation we could create a boolean query that filters out the first word match.
+Another way to implement the is not to index the first word of the organization name.
+A slight complication with this approach is that the query time analyzer should be different from
+the index time analyzer to prevent the removal of the first (and probably the only) word from the query.
+Let&amp;rsquo;s proceed with the second approach because I think it is more interesting.&lt;/p>
+&lt;pre>&lt;code class="language-text">PUT organizations
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;tokenized&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;
+]
+},
+&amp;quot;tokenized_without_first_word&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;remove_first_word&amp;quot;,
+&amp;quot;lowercase&amp;quot;
+]
+}
+},
+&amp;quot;filter&amp;quot;: {
+&amp;quot;remove_first_word&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;predicate_token_filter&amp;quot;,
+&amp;quot;script&amp;quot;: {
+&amp;quot;source&amp;quot;: &amp;quot;token.position != 0&amp;quot;
+}
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;tokenized_without_first_word&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;tokenized_without_first_word&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;tokenized&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Note, for the sake of simplicity for examples we assume only one word queries.&lt;/p>
+&lt;p>Query:&lt;/p>
+&lt;pre>&lt;code class="language-text">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.tokenized_without_first_word&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Exact not first word match&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 5
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Hits&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 1,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 6.0,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;3&amp;quot;,
+&amp;quot;_score&amp;quot; : 6.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Big Apple Company&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Exact not first word match&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;h3 id="partial-first-word-match---start">Partial first word match - start&lt;/h3>
+&lt;p>E.g. Query &amp;ldquo;Apple&amp;rdquo; should match &amp;ldquo;Applesauce Company&amp;rdquo;.
+Probably we could get away with a simple prefix query, but if we want to make it fast for larger indices we should do &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-edgengram-tokenfilter.html">edge n-grams token filter&lt;/a>.
+The idea is to keep only this first word and then apply the edge n-gram token filter on it.
+Of course, query analyzer should be specified without edge n-gram token filter to prevent false hits from matching a couple of first characters from the query, e.g. query &amp;ldquo;Apps&amp;rdquo; would match &amp;ldquo;Apple&amp;rdquo; which we don&amp;rsquo;t want.&lt;/p>
+&lt;p>Index configuration:&lt;/p>
+&lt;pre>&lt;code class="language-text">PUT organizations
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;standard_first_token_limit&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;lowercase&amp;quot;
+]
+},
+&amp;quot;standard_first_token_limit_edge_ngrams&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;1_10_edgegrams&amp;quot;,
+&amp;quot;lowercase&amp;quot;
+]
+}
+},
+&amp;quot;filter&amp;quot;: {
+&amp;quot;1_10_edgegrams&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;edge_ngram&amp;quot;,
+&amp;quot;min_gram&amp;quot;: 1,
+&amp;quot;max_gram&amp;quot;: 10
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;first_token_edge_ngram&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;standard_first_token_limit_edge_ngrams&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;standard_first_token_limit&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Here the &lt;code>max_ngram&lt;/code> is set to 10 for no big reason, it really depends on your data.&lt;/p>
+&lt;p>Query:&lt;/p>
+&lt;pre>&lt;code class="language-text">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.first_token_edge_ngram&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Partial first word match - start&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 4
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Hits:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 3,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 4.0,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 4.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - start&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;2&amp;quot;,
+&amp;quot;_score&amp;quot; : 4.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple Computers&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - start&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;4&amp;quot;,
+&amp;quot;_score&amp;quot; : 4.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Applesauce Company&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - start&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Note that &amp;ldquo;Apple&amp;rdquo; and &amp;ldquo;Apple Computers&amp;rdquo; also matched along the &amp;ldquo;Applesauce Company&amp;rdquo;.
+We could prevent matching the first two by doing the bool query with must_not match on the whole first token.&lt;/p>
+&lt;h3 id="partial-first-word-match---end">Partial first word match - end&lt;/h3>
+&lt;p>E.g. Query &amp;ldquo;Apple&amp;rdquo; should match &amp;ldquo;Pineapple Manufacturing&amp;rdquo;.
+In other words, the query string should be the ending of the first word of the organization name.
+The idea is to take the first word, reverse it, apply edge n-grams, reverse those n-grams.
+The search time analyzer should not have an edge n-grams token filter.&lt;/p>
+&lt;p>Index configuration:&lt;/p>
+&lt;pre>&lt;code class="language-text">PUT organizations
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;standard_first_token_limit&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;lowercase&amp;quot;
+]
+},
+&amp;quot;standard_one_token_limit_endings&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;lowercase&amp;quot;,
+&amp;quot;reverse&amp;quot;,
+&amp;quot;1_10_edgegrams&amp;quot;,
+&amp;quot;reverse&amp;quot;
+]
+}
+},
+&amp;quot;filter&amp;quot;: {
+&amp;quot;1_10_edgegrams&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;edge_ngram&amp;quot;,
+&amp;quot;min_gram&amp;quot;: 1,
+&amp;quot;max_gram&amp;quot;: 10
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;first_word_end_ngrams&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;standard_one_token_limit_endings&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;standard_first_token_limit&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Query:&lt;/p>
+&lt;pre>&lt;code class="language-text">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.first_word_end_ngrams&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Partial first word match - end&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 3
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Hits:&lt;/p>
+&lt;pre>&lt;code class="language-text">{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 3,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 3.0,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 3.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - end&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;2&amp;quot;,
+&amp;quot;_score&amp;quot; : 3.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple Computers&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - end&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;5&amp;quot;,
+&amp;quot;_score&amp;quot; : 3.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Pineapple Manufacturing&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - end&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;h3 id="partial-not-first-word-match---end">Partial not first word match - end&lt;/h3>
+&lt;p>E.g. query &amp;ldquo;Apple&amp;rdquo; should match &amp;ldquo;Canadian Bakeapple&amp;rdquo;.
+The idea is to tokenize, lowercase, remove first word, reverse tokens, create edge n-grams, reverse back.
+Search time analyzer should not include edge n-grams.&lt;/p>
+&lt;p>Index configuration:&lt;/p>
+&lt;pre>&lt;code class="language-text">PUT organizations
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;standard_first_token_limit&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;lowercase&amp;quot;
+]
+},
+&amp;quot;standard_remaining_token_endings&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;remove_first_word&amp;quot;,
+&amp;quot;lowercase&amp;quot;,
+&amp;quot;reverse&amp;quot;,
+&amp;quot;1_10_edgegrams&amp;quot;,
+&amp;quot;reverse&amp;quot;
+]
+}
+},
+&amp;quot;filter&amp;quot;: {
+&amp;quot;1_10_edgegrams&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;edge_ngram&amp;quot;,
+&amp;quot;min_gram&amp;quot;: 1,
+&amp;quot;max_gram&amp;quot;: 10
+},
+&amp;quot;remove_first_word&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;predicate_token_filter&amp;quot;,
+&amp;quot;script&amp;quot;: {
+&amp;quot;source&amp;quot;: &amp;quot;token.position != 0&amp;quot;
+}
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;remaining_words_end_ngrams&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;standard_remaining_token_endings&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;standard_first_token_limit&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Query:&lt;/p>
+&lt;pre>&lt;code class="language-text">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.remaining_words_end_ngrams&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Partial not first word match - end&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 2
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Hits:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 2,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 2.0,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;3&amp;quot;,
+&amp;quot;_score&amp;quot; : 2.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Big Apple Company&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial not first word match - end&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;6&amp;quot;,
+&amp;quot;_score&amp;quot; : 2.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Canadian Bakeapple&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial not first word match - end&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;h3 id="fuzzy">Fuzzy&lt;/h3>
+&lt;p>E.g. query &amp;ldquo;Apple&amp;rdquo; should match &amp;ldquo;Apply&amp;rdquo;.
+It is pretty much the exact match but with some &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query.html#query-dsl-match-query-fuzziness">fuzziness&lt;/a> allowed.&lt;/p>
+&lt;p>Index configuration:&lt;/p>
+&lt;pre>&lt;code class="language-text">PUT organizations
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;normalizer&amp;quot;: {
+&amp;quot;lowercased_keyword&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;custom&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;
+]
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;keyword_lowercased&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;normalizer&amp;quot;: &amp;quot;lowercased_keyword&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Query:&lt;/p>
+&lt;pre>&lt;code class="language-text">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;fuzziness&amp;quot;: 1,
+&amp;quot;_name&amp;quot;: &amp;quot;fuzzy_1&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 1
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Hits:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot; : 1,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 2,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 1.0,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 1.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;fuzzy_1&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;7&amp;quot;,
+&amp;quot;_score&amp;quot; : 1.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apply&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;fuzzy_1&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>In some circumstances we might allow fuzziness set to more than 1.&lt;/p>
+&lt;h2 id="lets-combine-the-pieces-together">Let&amp;rsquo;s combine the pieces together&lt;/h2>
+&lt;p>Phew, that was pretty involved.
+Let&amp;rsquo;s combine the previous examples into one, so our requirements are satisfied.&lt;/p>
+&lt;p>Index configuration is constructed by merging analysis components and adding fields from all the examples:&lt;/p>
+&lt;pre>&lt;code class="language-text">PUT organizations
+{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;normalizer&amp;quot;: {
+&amp;quot;lowercased_keyword&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;custom&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;
+]
+}
+},
+&amp;quot;filter&amp;quot;: {
+&amp;quot;1_10_edgegrams&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;edge_ngram&amp;quot;,
+&amp;quot;min_gram&amp;quot;: 1,
+&amp;quot;max_gram&amp;quot;: 10
+},
+&amp;quot;remove_first_word&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;predicate_token_filter&amp;quot;,
+&amp;quot;script&amp;quot;: {
+&amp;quot;source&amp;quot;: &amp;quot;token.position != 0&amp;quot;
+}
+}
+},
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;standard_one_token_limit&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;lowercase&amp;quot;
+]
+},
+&amp;quot;tokenized&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;lowercase&amp;quot;
+]
+},
+&amp;quot;tokenized_without_first_word&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;remove_first_word&amp;quot;,
+&amp;quot;lowercase&amp;quot;
+]
+},
+&amp;quot;standard_first_token_limit_edge_ngrams&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;lowercase&amp;quot;,
+&amp;quot;1_10_edgegrams&amp;quot;
+]
+},
+&amp;quot;standard_first_token_limit&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;lowercase&amp;quot;
+]
+},
+&amp;quot;standard_remaining_token_endings&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;remove_first_word&amp;quot;,
+&amp;quot;lowercase&amp;quot;,
+&amp;quot;reverse&amp;quot;,
+&amp;quot;1_10_edgegrams&amp;quot;,
+&amp;quot;reverse&amp;quot;
+]
+},
+&amp;quot;standard_one_token_limit_endings&amp;quot;: {
+&amp;quot;tokenizer&amp;quot;: &amp;quot;standard&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;limit&amp;quot;,
+&amp;quot;lowercase&amp;quot;,
+&amp;quot;reverse&amp;quot;,
+&amp;quot;1_10_edgegrams&amp;quot;,
+&amp;quot;reverse&amp;quot;
+]
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;first_token&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;standard_one_token_limit&amp;quot;
+},
+&amp;quot;tokenized_without_first_word&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;tokenized_without_first_word&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;tokenized&amp;quot;
+},
+&amp;quot;first_token_edge_ngram&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;standard_first_token_limit_edge_ngrams&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;standard_first_token_limit&amp;quot;
+},
+&amp;quot;first_word_end_ngrams&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;standard_one_token_limit_endings&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;standard_first_token_limit&amp;quot;
+},
+&amp;quot;remaining_words_end_ngrams&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;standard_remaining_token_endings&amp;quot;,
+&amp;quot;search_analyzer&amp;quot;: &amp;quot;standard_first_token_limit&amp;quot;
+},
+&amp;quot;keyword_lowercased&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;normalizer&amp;quot;: &amp;quot;lowercased_keyword&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Here&lt;/p>
+&lt;p>The query is constructed from all the previous examples simply by adding constant score queries to the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-dis-max-query.html">dis_max&lt;/a> query:&lt;/p>
+&lt;pre>&lt;code class="language-text">GET organizations/_search
+{
+&amp;quot;query&amp;quot;: {
+&amp;quot;dis_max&amp;quot;: {
+&amp;quot;queries&amp;quot;: [
+{
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;term&amp;quot;: {
+&amp;quot;name.keyword_lowercased&amp;quot;: {
+&amp;quot;value&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;exact_match&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 7
+}
+},
+{
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.first_token&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Exact first word match&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 6
+}
+},
+{
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.tokenized_without_first_word&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Exact not first word match&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 5
+}
+},
+{
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.first_token_edge_ngram&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Partial first word match - start&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 4
+}
+},
+{
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.first_word_end_ngrams&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Partial first word match - end&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 3
+}
+},
+{
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name.remaining_words_end_ngrams&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;_name&amp;quot;: &amp;quot;Partial not first word match - end&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 2
+}
+},
+{
+&amp;quot;constant_score&amp;quot;: {
+&amp;quot;filter&amp;quot;: {
+&amp;quot;match&amp;quot;: {
+&amp;quot;name&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;Apple&amp;quot;,
+&amp;quot;fuzziness&amp;quot;: 1,
+&amp;quot;_name&amp;quot;: &amp;quot;fuzzy_1&amp;quot;
+}
+}
+},
+&amp;quot;boost&amp;quot;: 1
+}
+}
+]
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Finally, the list of organizations ranked by the name similarity:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot; : 2,
+&amp;quot;timed_out&amp;quot; : false,
+&amp;quot;_shards&amp;quot; : {
+&amp;quot;total&amp;quot; : 1,
+&amp;quot;successful&amp;quot; : 1,
+&amp;quot;skipped&amp;quot; : 0,
+&amp;quot;failed&amp;quot; : 0
+},
+&amp;quot;hits&amp;quot; : {
+&amp;quot;total&amp;quot; : {
+&amp;quot;value&amp;quot; : 7,
+&amp;quot;relation&amp;quot; : &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot; : 7.0,
+&amp;quot;hits&amp;quot; : [
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot; : 7.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;exact_match&amp;quot;,
+&amp;quot;Partial first word match - end&amp;quot;,
+&amp;quot;Partial first word match - start&amp;quot;,
+&amp;quot;Exact first word match&amp;quot;,
+&amp;quot;fuzzy_1&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;2&amp;quot;,
+&amp;quot;_score&amp;quot; : 6.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apple Computers&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - end&amp;quot;,
+&amp;quot;Partial first word match - start&amp;quot;,
+&amp;quot;Exact first word match&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;3&amp;quot;,
+&amp;quot;_score&amp;quot; : 5.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Big Apple Company&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Exact not first word match&amp;quot;,
+&amp;quot;Partial not first word match - end&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;4&amp;quot;,
+&amp;quot;_score&amp;quot; : 4.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Applesauce Company&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - start&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;5&amp;quot;,
+&amp;quot;_score&amp;quot; : 3.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Pineapple Manufacturing&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial first word match - end&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;6&amp;quot;,
+&amp;quot;_score&amp;quot; : 2.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Canadian Bakeapple&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;Partial not first word match - end&amp;quot;
+]
+},
+{
+&amp;quot;_index&amp;quot; : &amp;quot;organizations&amp;quot;,
+&amp;quot;_type&amp;quot; : &amp;quot;_doc&amp;quot;,
+&amp;quot;_id&amp;quot; : &amp;quot;7&amp;quot;,
+&amp;quot;_score&amp;quot; : 1.0,
+&amp;quot;_source&amp;quot; : {
+&amp;quot;name&amp;quot; : &amp;quot;Apply&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot; : [
+&amp;quot;fuzzy_1&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Nice, from the most similar &amp;ldquo;Exact match&amp;rdquo; all the way down to the &amp;ldquo;fuzzy&amp;rdquo; matches.&lt;/p>
+&lt;p>I believe this post got a bit too long to continue working out the remaining requirements.
+I&amp;rsquo;ll finish the developments in the future post.
+Also, it shouldn&amp;rsquo;t be too hard to load bigger dataset to test our entity resolution algorithm, something like &lt;a href="http://download.companieshouse.gov.uk/en_output.html">Companies House registry&lt;/a> with some real world data.&lt;/p>
+&lt;h2 id="summary">Summary&lt;/h2>
+&lt;p>I hope this exercise was interesting.
+To sum up:&lt;/p>
+&lt;ul>
+&lt;li>I&amp;rsquo;ve demonstrated how to do the text analysis tricks that would shape the organization name string according to the requirements.&lt;/li>
+&lt;li>As a way to normalize search scores I&amp;rsquo;ve used the &lt;code>constant_score&lt;/code> query. To come up with this trick is not very obvious because Elasticsearch scoring by default is unbounded due to text statistics and therefore not very well suited
+to satisfy the requirements of matching semi structured short strings such ar organization names.&lt;/li>
+&lt;li>Another neat trick was to use the &lt;code>dis_max&lt;/code> query to calculate the score by taking only the most significant similarity signal.
+In this way we&amp;rsquo;ve prevented the situations where less similar matches would go up because they matched several less significant
+similarity rules and their score were added up.&lt;/li>
+&lt;li>Also, by using &lt;code>_name&lt;/code> parameters for each query clause we get which similarity rules matched despite the fact that we&amp;rsquo;ve took the score
+of the highest scoring similarity rule. These flags might be used for further rescoring in your application.&lt;/li>
+&lt;/ul>
+&lt;p>In case of any comments or questions don&amp;rsquo;t hesitate to leave comments under this Github &lt;a href="https://github.com/dainiusjocas/blog/issues/25">issue&lt;/a>.&lt;/p>
+&lt;h2 id="footnotes">Footnotes&lt;/h2>
+&lt;section class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1" role="doc-endnote">
+&lt;p>Another approach would be to use hits &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/highlighting.html">highlighting&lt;/a>. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2" role="doc-endnote">
+&lt;p>Of course, this is a bit unrealistic because organization name might very well contain more than one word.
+A hint on how to implement the same requrements for two word organization names would be to use &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-shingle-tokenfilter.html">shingles&lt;/a>. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/section></description></item><item><title>Make Elasticsearch Query Profiling Faster in Kibana</title><link>https://www.jocas.lt/blog/post/kibana-profile-many-shards-hack/</link><pubDate>Fri, 23 Jul 2021 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/kibana-profile-many-shards-hack/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;pre>&lt;code>curl &amp;quot;http://localhost:9200/index-with-many-shards/_search&amp;quot; -H 'Content-Type: application/json' -d'{&amp;quot;profile&amp;quot;: true}' | jq ' .profile.shards = [.profile.shards[0]]' | pbcopy
 &lt;/code>&lt;/pre>
 &lt;p>and paste into the Kibana&amp;rsquo;s Search Profile panel.&lt;/p>

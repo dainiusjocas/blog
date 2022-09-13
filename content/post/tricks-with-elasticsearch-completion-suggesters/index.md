@@ -24,9 +24,11 @@ output:
 
 Elasticsearch text analyzers can supercharge search suggesters. 
 
+{{< toc >}}
+
 ## Introduction
 
-So, you are a [search engineer](https://opensourceconnections.com/blog/2020/07/16/what-is-a-relevance-engineer/) that happily uses [Elasticsearch Completion Suggester](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-suggesters.html#completion-suggester) feature: lightning speed prefix suggestions works just like a charm.
+So, you are a [search engineer](https://opensourceconnections.com/blog/2020/07/16/what-is-a-relevance-engineer/) that happily uses [Elasticsearch Completion Suggester](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-suggesters.html#completion-suggester) feature: lightning speed prefix suggestions works just like a charm[^lucene].
 
 But one day the product manager comes to you with a requirement: `could we also suggest if users start typing a word from the middle of the suggested string?`. Of course, the deadline is yesterday, as always. On top he adds that he doesn't care whether that makes sense from search engineers perspective, it must be done[^1]. You try to argue that it will take forever to change upstream indexing pipeline because it is owned by another department of your company. PM doesn't blink.
 
@@ -48,7 +50,7 @@ After the technical refinement meeting the notes on implementation of use cases 
 
 Cool, it's time to open the Kibana dev tools and hack. All examples are worked out and tested with version `8.4.1`. 
 
-### Initial setup
+### Baseline suggestions setup
 
 Nothing fancy here, copy-paste from the documentation verbatim, for the sake of completeness.
 
@@ -114,7 +116,7 @@ And it returns:
 }
 ```
 
-### Suggestions from the second word
+### Suggest from the second word
 
 The idea here is to have a subfield for suggestions that uses different analyzers for indexing and searching. For indexing we want an analyzer that drops the first token. For search time analyzer we want to use a standard analyzers because we should not drop first token from the search string. Do not forget to set `preserve_position_increments` as `false` for the new field.
 
@@ -399,9 +401,7 @@ Note that the suggestion for "john e" also works. Which might be a bit unexpecte
 
 Every separate use case is covered with a dedicated field. To support all of them at once you just need to add all the subfields into index and query all of them with multiple `suggest` clauses. How to combine those suggestions is out of scope for this post, but it should be implemented in your app.
 
-## Bonus 1
-
-### Synonyms for suggestions
+## Bonus 1: Synonyms for suggestions
 
 After the "successful" release of the new functionality the very next day PM (under the usual influence of some exotic and probably illegal substances) once again came up with new idea: "in search suggestions we need to support variants of artist names". His example was: "I've heard that most babies can't pronounce `britney` and she say something like [`ditney`](https://mom.com/baby-names/girl/19714/britney), so to make our product more successful among the baby searchers segment we must support this use case". 
 
@@ -495,7 +495,7 @@ Returns:
 
 It works, amazing! Baby searchers are happy.
 
-## Bonus 2
+## Bonus 2: shingles for suggestions
 
 After some sleeping on the mind-bending development experience a colleague asked: "can't we just use one field for all the requirements?". His reasoning was that we index the same string multiple times and our clusters doesn't have infinite capacity. Also, we've seen what and how PM is thinking, and it is only a matter of time when we will have to support suggestions from everywhere in the string". We've already seen that using synonyms it is doable.
 
@@ -738,10 +738,11 @@ It returns:
 
 Wow! Note, that a query (that spans several tokens) e.g. `britney sp` doesn't match anything. Fixable, but let's leave the fix out of scope for now.
 
-### Fin
+## Fin
 
 Thank you and congratulations: You got to the very end of the blog post. Tell me about your craziest adventures with the search suggestions in the comments below?  
 
 ## Footnotes
 
 [^1]: All the characters in this story are completely fictional.
+[^lucene]: Have a look at the impressive engineering of [Lucene](https://github.com/apache/lucene/blob/main/lucene/suggest/src/java/org/apache/lucene/search/suggest/analyzing/AnalyzingSuggester.java).

@@ -1,0 +1,603 @@
+<!doctype html><html lang=en-us><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=x-ua-compatible content="IE=edge"><meta name=generator content="Source Themes Academic 4.5.0"><meta name=author content="Dainius Jocas"><meta name=description content="The missing pieces of the Elasticsearch documentation"><link rel=alternate hreflang=en-us href=https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/><meta name=theme-color content="#2962ff"><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/academicons/1.8.6/css/academicons.min.css integrity="sha256-uFVgMKfistnJAfoCUQigIl+JfUaP47GrRKjf6CTPVmw=" crossorigin=anonymous><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin=anonymous><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.css integrity="sha256-Vzbj7sDDS/woiFS3uNKo8eIuni59rjyNGtXfstRzStA=" crossorigin=anonymous><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css crossorigin=anonymous title=hl-light><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css crossorigin=anonymous title=hl-dark disabled><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.5.1/leaflet.css integrity="sha256-SHMGCYmST46SoyGgo4YR/9AlK1vf3ff84Aq9yK4hdqM=" crossorigin=anonymous><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Montserrat:400,700%7CRoboto:400,400italic,700%7CRoboto+Mono&display=swap"><link rel=stylesheet href=/blog/css/academic.css><script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','UA-122337142-2');</script><link rel=manifest href=/blog/index.webmanifest><link rel=icon type=image/png href=/blog/img/icon-32.png><link rel=apple-touch-icon type=image/png href=/blog/img/icon-192.png><link rel=canonical href=https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/><meta property="twitter:card" content="summary_large_image"><meta property="og:site_name" content="Dainius Jocas"><meta property="og:url" content="https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/"><meta property="og:title" content="Tricks with Elasticsearch Completions Suggesters | Dainius Jocas"><meta property="og:description" content="The missing pieces of the Elasticsearch documentation"><meta property="og:image" content="https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/featured.png"><meta property="twitter:image" content="https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/featured.png"><meta property="og:locale" content="en-us"><meta property="article:published_time" content="2022-09-13T00:00:00+00:00"><meta property="article:modified_time" content="2022-09-13T00:00:00+00:00"><script type=application/ld+json>{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/"},"headline":"Tricks with Elasticsearch Completions Suggesters","image":["https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/featured.png"],"datePublished":"2022-09-13T00:00:00Z","dateModified":"2022-09-13T00:00:00Z","author":{"@type":"Person","name":"Dainius Jocas"},"publisher":{"@type":"Organization","name":"Dainius Jocas","logo":{"@type":"ImageObject","url":"https://www.jocas.lt/blog/img/icon-512.png"}},"description":"The missing pieces of the Elasticsearch documentation"}</script><title>Tricks with Elasticsearch Completions Suggesters | Dainius Jocas</title></head><body id=top data-spy=scroll data-offset=70 data-target=#TableOfContents><aside class=search-results id=search><div class=container><section class=search-header><div class="row no-gutters justify-content-between mb-3"><div class=col-6><h1>Search</h1></div><div class="col-6 col-search-close"><a class=js-search href=#><i class="fas fa-times-circle text-muted" aria-hidden=true></i></a></div></div><div id=search-box><input name=q id=search-query placeholder=Search... autocapitalize=off autocomplete=off autocorrect=off spellcheck=false type=search></div></section><section class=section-search-results><div id=search-hits></div></section></div></aside><nav class="navbar navbar-light fixed-top navbar-expand-lg py-0 compensate-for-scrollbar" id=navbar-main><div class=container><a class=navbar-brand href=/blog/>Dainius Jocas</a>
+<button type=button class=navbar-toggler data-toggle=collapse data-target=#navbar aria-controls=navbar aria-expanded=false aria-label="Toggle navigation">
+<span><i class="fas fa-bars"></i></span></button><div class="collapse navbar-collapse" id=navbar><ul class="navbar-nav ml-auto"><li class=nav-item><a class=nav-link href=/blog/#posts><span>Posts</span></a></li><li class=nav-item><a class=nav-link href=/blog/#projects><span>Projects</span></a></li><li class=nav-item><a class=nav-link href=/blog/#talks><span>Talks</span></a></li><li class=nav-item><a class="nav-link js-search" href=#><i class="fas fa-search" aria-hidden=true></i></a></li><li class=nav-item><a class="nav-link js-dark-toggle" href=#><i class="fas fa-moon" aria-hidden=true></i></a></li></ul></div></div></nav><article class=article><div class="article-container pt-3"><h1>Tricks with Elasticsearch Completions Suggesters</h1><div class=article-metadata><div><span><a href=/blog/authors/dainius-jocas/>Dainius Jocas</a></span></div><span class=article-date>Sep 13, 2022</span>
+<span class=middot-divider></span><span class=article-reading-time>10 min read</span>
+<span class=middot-divider></span><span class=article-categories><i class="fas fa-folder mr-1"></i><a href=/blog/categories/elasticsearch/>elasticsearch</a></span></div><div class="btn-links mb-3"></div></div><div class="article-header article-container featured-image-wrapper mt-4 mb-4" style=max-width:512px;max-height:512px><div style=position:relative><img src=/blog/post/tricks-with-elasticsearch-completion-suggesters/featured.png alt class=featured-image>
+<span class=article-header-caption><a href=https://github.com/CompVis/stable-diffusion>Stable diffusion on search suggestions</a></span></div></div><div class=article-container><div class=article-style><h2 id=tldr>TL;DR</h2><p>Elasticsearch text analyzers can supercharge search suggesters.</p><h2 id=introduction>Introduction</h2><p>So, you are a <a href=https://opensourceconnections.com/blog/2020/07/16/what-is-a-relevance-engineer/>search engineer</a> that happily uses <a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/search-suggesters.html#completion-suggester>Elasticsearch Completion Suggester</a> feature: lightning speed prefix suggestions works just like a charm.</p><p>But one day the product manager comes to you with a requirement: <code>could we also suggest if users start typing a word from the middle of the suggested string?</code>. Of course, the deadline is yesterday, as always. On top he adds that he doesn&rsquo;t care whether that makes sense from search engineers perspective, it must be done<sup id=fnref:1><a href=#fn:1 class=footnote-ref role=doc-noteref>1</a></sup>. You try to argue that it will take forever to change upstream indexing pipeline because it is owned by another department of your company. PM doesn&rsquo;t blink.</p><h2 id=requirements>Requirements</h2><p>Your app suggests artist names. The problematic artist currently rocking in the charts and attracting a lot of attention is <code>Britney Spears & Elton John</code>. The PM specifies that it is needed that artists name and surname should be the source of suggestions. This means and that all <code>b</code>, <code>s</code>, <code>e</code>, <code>j</code> should suggest that artist.</p><p>The actual song<div style=position:relative;padding-bottom:56.25%;height:0;overflow:hidden><iframe src=https://www.youtube.com/embed/8hLtlzkoGPk style=position:absolute;top:0;left:0;width:100%;height:100%;border:0 allowfullscreen title="YouTube Video"></iframe></div>.</p><h2 id=implementation>Implementation</h2><p>Generating multiple strings upstream is not an option due to the time constraints (because in a week the song will not be in the charts anymore). Also, the team discards generation of multiple strings using an <a href=https://www.elastic.co/guide/en/elasticsearch/reference/master/ingest-processors.html>ingest processor</a> because nobody in our team likes to work with them. In the anemic Elasticsearch <a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/search-suggesters.html#_parameters_for_completion_fields_2>documentation</a> there is a hint that using text analyzers (stopwords are mentioned) it is possible to achieve different entry points for suggestions which sounds like the trick that might work for our case. You decide to go to the rabbit hole of the analyzers.</p><p>After the technical refinement meeting the notes on implementation of use cases look like:</p><ul><li><code>b</code> -> the classic use case which already works;</li><li><code>s</code> -> from the second word; trick is to use a different analyser at the search time;</li><li><code>e</code> -> from the second entity;</li><li><code>j</code> -> the last word.</li></ul><p>Cool, it&rsquo;s time to open the Kibana dev tools and hack. All examples are worked out and tested with version <code>8.4.1</code>.</p><h3 id=initial-setup>Initial setup</h3><p>Nothing fancy here, copy-paste from the documentation verbatim, for the sake of completeness.</p><pre><code class=language-text>DELETE music
+PUT music
+{
+  &quot;mappings&quot;: {
+    &quot;properties&quot;: {
+      &quot;suggest&quot;: {
+        &quot;type&quot;: &quot;completion&quot;
+      }
+    }
+  }
+}
+
+PUT music/_doc/1?refresh
+{
+  &quot;suggest&quot; : {
+    &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+  }
+}
+
+POST music/_search?filter_path=suggest
+{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: {
+      &quot;prefix&quot;: &quot;b&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest&quot;
+      }
+    }
+  }
+}
+</code></pre><p>And it returns:</p><pre><code class=language-text>{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: [
+      {
+        &quot;text&quot;: &quot;b&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+</code></pre><h3 id=suggestions-from-the-second-word>Suggestions from the second word</h3><p>The idea here is to have a subfield for suggestions that uses different analyzers for indexing and searching. For indexing we want an analyzer that drops the first token. For search time analyzer we want to use a standard analyzers because we should not drop first token from the search string. Do not forget to set <code>preserve_position_increments</code> as <code>false</code> for the new field.</p><pre><code class=language-text>DELETE music
+PUT music
+{
+  &quot;settings&quot;: {
+    &quot;analysis&quot;: {
+      &quot;filter&quot;: {
+        &quot;remove_first_word&quot;: {
+          &quot;type&quot;: &quot;predicate_token_filter&quot;,
+          &quot;script&quot;: {
+            &quot;source&quot;: &quot;token.position != 0&quot;
+          }
+        }
+      },
+      &quot;analyzer&quot;: {
+        &quot;drop_first_word&quot;: {
+          &quot;tokenizer&quot;: &quot;standard&quot;,
+          &quot;filter&quot;: [
+            &quot;remove_first_word&quot;,
+            &quot;lowercase&quot;
+          ]
+        }
+      }
+    }
+  }, 
+  &quot;mappings&quot;: {
+    &quot;properties&quot;: {
+      &quot;suggest&quot;: {
+        &quot;type&quot;: &quot;completion&quot;,
+        &quot;fields&quot;: {
+          &quot;from_second_word&quot;: {
+            &quot;type&quot;: &quot;completion&quot;,
+            &quot;analyzer&quot;: &quot;drop_first_word&quot;,
+            &quot;search_analyzer&quot;: &quot;standard&quot;,
+            &quot;preserve_position_increments&quot;: false
+          }
+        }
+      }
+    }
+  }
+}
+
+PUT music/_doc/1?refresh
+{
+  &quot;suggest&quot; : {
+    &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+  }
+}
+
+POST music/_search?filter_path=suggest
+{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: {
+      &quot;prefix&quot;: &quot;s&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest.from_second_word&quot;
+      }
+    }
+  }
+}
+</code></pre><p>It returns:</p><pre><code class=language-text>{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: [
+      {
+        &quot;text&quot;: &quot;s&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+</code></pre><p>Great start!</p><p>What about starting from the 3rd and 4th word? Could we just create a new subfield and change the script for the <code>predicate_token_filter</code> from <code>token.position != 0</code> to <code>token.position != 0 && token.position != 1</code> and so on? IMO, could work but there should be a &ldquo;better&rdquo; way.</p><h3 id=suggest-from-the-second-entity>Suggest from the second entity</h3><p>In other words we need to suggest text that starts after the separator. The implementation assumes that you have 2 entities. Once again, we will leverage different index and search time analyzers. For the indexing to achieve the required functionality with token filters would be complicated. The hack would be to use <code>char_filter</code> to get rid of the first &ldquo;entity&rdquo;.</p><pre><code class=language-text>DELETE music
+PUT music
+{
+  &quot;settings&quot;: {
+    &quot;analysis&quot;: {
+      &quot;char_filter&quot;: {
+        &quot;remove_until_separator&quot;: {
+          &quot;type&quot;: &quot;pattern_replace&quot;,
+          &quot;pattern&quot;: &quot;(.*and )|(.*&amp; )&quot;,
+          &quot;replacement&quot;: &quot;&quot;
+        }
+      },
+      &quot;analyzer&quot;: {
+        &quot;drop_first_entity&quot;: {
+          &quot;tokenizer&quot;: &quot;standard&quot;,
+          &quot;char_filter&quot;: [&quot;remove_until_separator&quot;],
+          &quot;filter&quot;: [ &quot;lowercase&quot;]
+        }
+      }
+    }
+  }, 
+  &quot;mappings&quot;: {
+    &quot;properties&quot;: {
+      &quot;suggest&quot;: {
+        &quot;type&quot;: &quot;completion&quot;,
+        &quot;fields&quot;: {
+          &quot;from_second_entity&quot;: {
+            &quot;type&quot;: &quot;completion&quot;,
+            &quot;analyzer&quot;: &quot;drop_first_entity&quot;,
+            &quot;search_analyzer&quot;: &quot;standard&quot;,
+            &quot;preserve_position_increments&quot;: false
+          }
+        }
+      }
+    }
+  }
+}
+
+PUT music/_doc/1?refresh
+{
+  &quot;suggest&quot; : {
+    &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+  }
+}
+
+POST music/_search?filter_path=suggest
+{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: {
+      &quot;prefix&quot;: &quot;e&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest.from_second_entity&quot;
+      }
+    }
+  }
+}
+</code></pre><p>Returns:</p><pre><code class=language-text>{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: [
+      {
+        &quot;text&quot;: &quot;e&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+</code></pre><h3 id=suggest-from-the-last-word>Suggest from the last word</h3><p>The idea is not to tokenize the string, reverse the string, tokenize the reversed string, and reverse the tokens once again.</p><pre><code class=language-text>DELETE music
+PUT music
+{
+  &quot;settings&quot;: {
+    &quot;analysis&quot;: {
+      &quot;analyzer&quot;: {
+        &quot;last_word&quot;: {
+          &quot;tokenizer&quot;: &quot;keyword&quot;,
+          &quot;filter&quot;: [ 
+            &quot;lowercase&quot;, 
+            &quot;reverse&quot;,
+            &quot;word_delimiter_graph&quot;, 
+            &quot;reverse&quot;
+          ]
+        }
+      }
+    }
+  }, 
+  &quot;mappings&quot;: {
+    &quot;properties&quot;: {
+      &quot;suggest&quot;: {
+        &quot;type&quot;: &quot;completion&quot;,
+        &quot;fields&quot;: {
+          &quot;from_last_word&quot;: {
+            &quot;type&quot;: &quot;completion&quot;,
+            &quot;analyzer&quot;: &quot;last_word&quot;,
+            &quot;search_analyzer&quot;: &quot;standard&quot;,
+            &quot;preserve_position_increments&quot;: false
+          }
+        }
+      }
+    }
+  }
+}
+
+PUT music/_doc/1?refresh
+{
+  &quot;suggest&quot; : {
+    &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+  }
+}
+
+POST music/_search?filter_path=suggest
+{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: {
+      &quot;prefix&quot;: &quot;j&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest.from_last_word&quot;
+      }
+    }
+  }
+}
+</code></pre><p>returns</p><pre><code class=language-json>{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: [
+      {
+        &quot;text&quot;: &quot;j&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+</code></pre><p>Note that the suggestion for &ldquo;john e&rdquo; also works. Which might be a bit unexpected.</p><h2 id=summary>Summary</h2><p>Every separate use case is covered with a dedicated field. To support all of them at once you just need to add all the subfields into index and query all of them with multiple <code>suggest</code> clauses. How to combine those suggestions is out of scope for this post, but it should be implemented in your app.</p><h2 id=bonus-1>Bonus 1</h2><h3 id=synonyms-for-suggestions>Synonyms for suggestions</h3><p>After the &ldquo;successful&rdquo; release of the new functionality the very next day PM (under the usual influence of some exotic and probably illegal substances) once again came up with new idea: &ldquo;in search suggestions we need to support variants of artist names&rdquo;. His example was: &ldquo;I&rsquo;ve heard that most babies can&rsquo;t pronounce <code>britney</code> and she say something like <a href=https://mom.com/baby-names/girl/19714/britney><code>ditney</code></a>, so to make our product more successful among the baby searchers segment we must support this use case&rdquo;.</p><p>Somewhat reasonable :)</p><p>The idea is to add synonym token filter for the artist names so that the synonym token would be on the 0 position in the token stream.</p><pre><code class=language-kibana>DELETE music
+PUT music
+{
+  &quot;settings&quot;: {
+    &quot;analysis&quot;: {
+      &quot;filter&quot;: {
+        &quot;name_synonyms&quot;: {
+          &quot;type&quot;: &quot;synonym&quot;,
+          &quot;synonyms&quot;: [
+            &quot;britney, ditney&quot;
+          ]
+        }
+      },
+      &quot;analyzer&quot;: {
+        &quot;synonyms&quot;: {
+          &quot;tokenizer&quot;: &quot;standard&quot;,
+          &quot;filter&quot;: [
+            &quot;lowercase&quot;,
+            &quot;name_synonyms&quot;
+          ]
+        }
+      }
+    }
+  },
+  &quot;mappings&quot;: {
+    &quot;properties&quot;: {
+      &quot;suggest&quot;: {
+        &quot;type&quot;: &quot;completion&quot;,
+        &quot;analyzer&quot;: &quot;synonyms&quot;
+      }
+    }
+  }
+}
+
+PUT music/_doc/1?refresh
+{
+  &quot;suggest&quot; : {
+    &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+  }
+}
+
+POST music/_search?filter_path=suggest
+{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: {
+      &quot;prefix&quot;: &quot;d&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest&quot;
+      }
+    }
+  }
+}
+</code></pre><p>Returns:</p><pre><code class=language-text>{
+  &quot;suggest&quot;: {
+    &quot;artist&quot;: [
+      {
+        &quot;text&quot;: &quot;d&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+</code></pre><p>It works, amazing! Baby searchers are happy.</p><h2 id=bonus-2>Bonus 2</h2><p>After some sleeping on the mind-bending development experience a colleague asked: &ldquo;can&rsquo;t we just use one field for all the requirements?&rdquo;. His reasoning was that we index the same string multiple times and our clusters doesn&rsquo;t have infinite capacity. Also, we&rsquo;ve seen what and how PM is thinking, and it is only a matter of time when we will have to support suggestions from everywhere in the string". We&rsquo;ve already seen that using synonyms it is doable.</p><p>His idea was to analyze text in such a way that it would produce multiple tokens with the position=0 for all the potential suggestion &ldquo;entry points&rdquo;. To achieve it we could <a href=https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-shingle-tokenfilter.html>shingle</a> the string, take only shingles that has position=0 and take the last word from every shingle. Let&rsquo;s try.</p><pre><code class=language-kibana>DELETE music
+PUT music
+{
+  &quot;settings&quot;: {
+    &quot;index.max_shingle_diff&quot;: 10,
+    &quot;analysis&quot;: {
+      &quot;filter&quot;: {
+        &quot;after_last_space&quot;: {
+          &quot;type&quot;: &quot;pattern_replace&quot;,
+          &quot;pattern&quot;: &quot;(.* )&quot;,
+          &quot;replacement&quot;: &quot;&quot;
+        },
+        &quot;preserve_only_first&quot;: {
+          &quot;type&quot;: &quot;predicate_token_filter&quot;,
+          &quot;script&quot;: {
+            &quot;source&quot;: &quot;token.position == 0&quot;
+          }
+        },
+        &quot;big_shingling&quot;: {
+          &quot;type&quot;: &quot;shingle&quot;,
+          &quot;min_shingle_size&quot;: 2,
+          &quot;max_shingle_size&quot;: 10,
+          &quot;output_unigrams&quot;: true
+        }
+      },
+      &quot;analyzer&quot;: {
+        &quot;dark_magic&quot;: {
+          &quot;tokenizer&quot;: &quot;standard&quot;,
+          &quot;filter&quot;: [
+            &quot;lowercase&quot;,
+            &quot;big_shingling&quot;,
+            &quot;preserve_only_first&quot;,
+            &quot;after_last_space&quot;
+          ]
+        }
+      }
+    }
+  },
+  &quot;mappings&quot;: {
+    &quot;properties&quot;: {
+      &quot;suggest&quot;: {
+        &quot;type&quot;: &quot;completion&quot;,
+        &quot;analyzer&quot;: &quot;dark_magic&quot;,
+        &quot;search_analyzer&quot;: &quot;standard&quot;
+      }
+    }
+  }
+}
+
+PUT music/_doc/1?refresh
+{
+  &quot;suggest&quot; : {
+    &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+  }
+}
+</code></pre><p>Let&rsquo;s test how this analyzer works:</p><pre><code class=language-kibana>POST music/_analyze
+{
+  &quot;explain&quot;: false, 
+  &quot;text&quot;: [&quot;Britney Spears &amp; Elton John&quot;],
+  &quot;analyzer&quot;: &quot;dark_magic&quot;
+}
+</code></pre><p>Returns</p><pre><code class=language-json>{
+  &quot;tokens&quot;: [
+    {
+      &quot;token&quot;: &quot;britney&quot;,
+      &quot;start_offset&quot;: 0,
+      &quot;end_offset&quot;: 7,
+      &quot;type&quot;: &quot;&lt;ALPHANUM&gt;&quot;,
+      &quot;position&quot;: 0
+    },
+    {
+      &quot;token&quot;: &quot;spears&quot;,
+      &quot;start_offset&quot;: 0,
+      &quot;end_offset&quot;: 14,
+      &quot;type&quot;: &quot;shingle&quot;,
+      &quot;position&quot;: 0,
+      &quot;positionLength&quot;: 2
+    },
+    {
+      &quot;token&quot;: &quot;elton&quot;,
+      &quot;start_offset&quot;: 0,
+      &quot;end_offset&quot;: 22,
+      &quot;type&quot;: &quot;shingle&quot;,
+      &quot;position&quot;: 0,
+      &quot;positionLength&quot;: 3
+    },
+    {
+      &quot;token&quot;: &quot;john&quot;,
+      &quot;start_offset&quot;: 0,
+      &quot;end_offset&quot;: 27,
+      &quot;type&quot;: &quot;shingle&quot;,
+      &quot;position&quot;: 0,
+      &quot;positionLength&quot;: 4
+    }
+  ]
+}
+</code></pre><p>Positions of all the tokens are 0. Good start.</p><p>Let&rsquo;s test the suggestions with all the potential queries in the same request:</p><pre><code class=language-text>
+POST music/_search?filter_path=suggest
+{
+  &quot;suggest&quot;: {
+    &quot;britney&quot;: {
+      &quot;prefix&quot;: &quot;b&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest&quot;
+      }
+    },
+    &quot;spears&quot;: {
+      &quot;prefix&quot;: &quot;s&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest&quot;
+      }
+    },
+    &quot;elton&quot;: {
+      &quot;prefix&quot;: &quot;e&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest&quot;
+      }
+    },
+    &quot;john&quot;: {
+      &quot;prefix&quot;: &quot;j&quot;,
+      &quot;completion&quot;: {
+        &quot;field&quot;: &quot;suggest&quot;
+      }
+    }
+  }
+}
+</code></pre><p>It returns:</p><pre><code class=language-json>{
+  &quot;suggest&quot;: {
+    &quot;britney&quot;: [
+      {
+        &quot;text&quot;: &quot;b&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ],
+    &quot;elton&quot;: [
+      {
+        &quot;text&quot;: &quot;e&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ],
+    &quot;john&quot;: [
+      {
+        &quot;text&quot;: &quot;j&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ],
+    &quot;spears&quot;: [
+      {
+        &quot;text&quot;: &quot;s&quot;,
+        &quot;offset&quot;: 0,
+        &quot;length&quot;: 1,
+        &quot;options&quot;: [
+          {
+            &quot;text&quot;: &quot;Britney Spears &amp; Elton John&quot;,
+            &quot;_index&quot;: &quot;music&quot;,
+            &quot;_id&quot;: &quot;1&quot;,
+            &quot;_score&quot;: 1,
+            &quot;_source&quot;: {
+              &quot;suggest&quot;: {
+                &quot;input&quot;: &quot;Britney Spears &amp; Elton John&quot;
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+</code></pre><p>Wow! Note, that a query (that spans several tokens) e.g. <code>britney sp</code> doesn&rsquo;t match anything. Fixable, but let&rsquo;s leave the fix out of scope for now.</p><h3 id=fin>Fin</h3><p>Thank you and congratulations: You got to the very end of the blog post. Tell me about your craziest adventures with the search suggestions in the comments below?</p><h2 id=footnotes>Footnotes</h2><section class=footnotes role=doc-endnotes><hr><ol><li id=fn:1 role=doc-endnote><p>All the characters in this story are completely fictional. <a href=#fnref:1 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li></ol></section></div><div class=article-tags><a class="badge badge-light" href=/blog/tags/elasticsearch/>elasticsearch</a>
+<a class="badge badge-light" href=/blog/tags/opensearch/>opensearch</a></div><div class=share-box aria-hidden=true><ul class=share><li><a href="https://twitter.com/intent/tweet?url=https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/&text=Tricks%20with%20Elasticsearch%20Completions%20Suggesters" target=_blank rel=noopener class=share-btn-twitter><i class="fab fa-twitter"></i></a></li><li><a href="https://www.facebook.com/sharer.php?u=https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/&t=Tricks%20with%20Elasticsearch%20Completions%20Suggesters" target=_blank rel=noopener class=share-btn-facebook><i class="fab fa-facebook-f"></i></a></li><li><a href="mailto:?subject=Tricks%20with%20Elasticsearch%20Completions%20Suggesters&body=https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/" target=_blank rel=noopener class=share-btn-email><i class="fas fa-envelope"></i></a></li><li><a href="https://www.linkedin.com/shareArticle?url=https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/&title=Tricks%20with%20Elasticsearch%20Completions%20Suggesters" target=_blank rel=noopener class=share-btn-linkedin><i class="fab fa-linkedin-in"></i></a></li><li><a href="https://web.whatsapp.com/send?text=Tricks%20with%20Elasticsearch%20Completions%20Suggesters%20https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/" target=_blank rel=noopener class=share-btn-whatsapp><i class="fab fa-whatsapp"></i></a></li></ul></div><script src=https://giscus.app/client.js data-repo=dainiusjocas/blog data-repo-id="MDEwOlJlcG9zaXRvcnkyMjA4MjEwNzY=" data-category=General data-category-id=DIC_kwDODSl2VM4CPWBS data-mapping=pathname data-reactions-enabled=1 data-emit-metadata=1 data-input-position=top data-theme=light data-lang=en data-loading=lazy crossorigin=anonymous async></script><div class="article-widget content-widget-hr"><h3>Related</h3><ul><li><a href=/blog/post/entity-resolution/>Entity Resolution with Opensearch/Elasticsearch</a></li><li><a href=/blog/post/kibana-profile-many-shards-hack/>Make Elasticsearch Query Profiling Faster in Kibana</a></li><li><a href=/blog/talk/elasticsearch-community-meetup/>Lessons Learned While Scaling Elasticsearch @ Vinted</a></li><li><a href=/blog/talk/wearedevelopers-2021-05-12/>Don't Change the Partition Count for Kafka Topics!</a></li><li><a href=/blog/talk/vilnius-cloud-native-2021-04-07/>Don't Change the Partition Count for Kafka Topics!</a></li></ul></div></div></article><script src=https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin=anonymous></script><script src=https://cdnjs.cloudflare.com/ajax/libs/jquery.imagesloaded/4.1.4/imagesloaded.pkgd.min.js integrity="sha256-lqvxZrPLtfffUl2G/e7szqSvPBILGbwmsGE1MKlOi0Q=" crossorigin=anonymous></script><script src=https://cdnjs.cloudflare.com/ajax/libs/jquery.isotope/3.0.6/isotope.pkgd.min.js integrity="sha256-CBrpuqrMhXwcLLUd5tvQ4euBHCdh7wGlDfNz8vbu/iI=" crossorigin=anonymous></script><script src=https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.5.7/jquery.fancybox.min.js integrity="sha256-yt2kYMy0w8AbtF89WXb2P1rfjcP/HTHLT7097U8Y5b8=" crossorigin=anonymous></script><script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/highlight.min.js integrity="sha256-1zu+3BnLYV9LdiY85uXMzii3bdrkelyp37e0ZyTAQh0=" crossorigin=anonymous></script><script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/clojure.min.js></script><script src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/languages/java.min.js></script><script src=https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.5.1/leaflet.js integrity="sha256-EErZamuLefUnbMBQbsEqu1USa+btR2oIlCpBJbyD4/g=" crossorigin=anonymous></script><script>hljs.initHighlightingOnLoad();</script><script>const search_config={"indexURI":"/blog/index.json","minLength":1,"threshold":0.3};const i18n={"no_results":"No results found","placeholder":"Search...","results":"results found"};const content_type={'post':"Posts",'project':"Projects",'publication':"Publications",'talk':"Talks"};</script><script id=search-hit-fuse-template type=text/x-template>
+      <div class="search-hit" id="summary-{{key}}">
+      <div class="search-hit-content">
+        <div class="search-hit-name">
+          <a href="{{relpermalink}}">{{title}}</a>
+          <div class="article-metadata search-hit-type">{{type}}</div>
+          <p class="search-hit-description">{{snippet}}</p>
+        </div>
+      </div>
+      </div>
+    </script><script src=https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.2.1/fuse.min.js integrity="sha256-VzgmKYmhsGNNN4Ph1kMW+BjoYJM2jV5i4IlFoeZA9XI=" crossorigin=anonymous></script><script src=https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin=anonymous></script><script src=/blog/js/academic.min.d6bd04fdad2ad213aa8111c5a3b72fc5.js></script><div class=container><footer class=site-footer><p class=powered-by>© 2022 Dainius Jocas &#183;
+Powered by the
+<a href=https://sourcethemes.com/academic/ target=_blank rel=noopener>Academic theme</a> for
+<a href=https://gohugo.io target=_blank rel=noopener>Hugo</a>.
+<span class=float-right aria-hidden=true><a href=# class=back-to-top><span class=button_icon><i class="fas fa-chevron-up fa-2x"></i></span></a></span></p></footer></div><div id=modal class="modal fade" role=dialog><div class=modal-dialog><div class=modal-content><div class=modal-header><h5 class=modal-title>Cite</h5><button type=button class=close data-dismiss=modal aria-label=Close>
+<span aria-hidden=true>&#215;</span></button></div><div class=modal-body><pre><code class="tex hljs"></code></pre></div><div class=modal-footer><a class="btn btn-outline-primary my-1 js-copy-cite" href=# target=_blank><i class="fas fa-copy"></i>Copy</a>
+<a class="btn btn-outline-primary my-1 js-download-cite" href=# target=_blank><i class="fas fa-download"></i>Download</a><div id=modal-error></div></div></div></div></div></body></html>

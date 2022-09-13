@@ -1,8 +1,29 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link><atom:link href="https://www.jocas.lt/blog/index.xml" rel="self" type="application/rss+xml"/><description>Dainius Jocas</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2022 Dainius Jocas</copyright><lastBuildDate>Tue, 13 Sep 2022 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link></image><item><title>Tricks with Elasticsearch Completions Suggesters</title><link>https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/</link><pubDate>Tue, 13 Sep 2022 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>Elasticsearch text analyzers can supercharge search suggesters.&lt;/p>
+&lt;h2>Table of Contents&lt;/h2>
+&lt;nav id="TableOfContents">
+&lt;ul>
+&lt;li>&lt;a href="#tldr">TL;DR&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#introduction">Introduction&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#requirements">Requirements&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#implementation">Implementation&lt;/a>
+&lt;ul>
+&lt;li>&lt;a href="#baseline-suggestions-setup">Baseline suggestions setup&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#suggest-from-the-second-word">Suggest from the second word&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#suggest-from-the-second-entity">Suggest from the second entity&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#suggest-from-the-last-word">Suggest from the last word&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;a href="#summary">Summary&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#bonus-1-synonyms-for-suggestions">Bonus 1: Synonyms for suggestions&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#bonus-2-shingles-for-suggestions">Bonus 2: shingles for suggestions&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#fin">Fin&lt;/a>&lt;/li>
+&lt;li>&lt;a href="#footnotes">Footnotes&lt;/a>&lt;/li>
+&lt;/ul>
+&lt;/nav>
 &lt;h2 id="introduction">Introduction&lt;/h2>
-&lt;p>So, you are a &lt;a href="https://opensourceconnections.com/blog/2020/07/16/what-is-a-relevance-engineer/">search engineer&lt;/a> that happily uses &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-suggesters.html#completion-suggester">Elasticsearch Completion Suggester&lt;/a> feature: lightning speed prefix suggestions works just like a charm.&lt;/p>
-&lt;p>But one day the product manager comes to you with a requirement: &lt;code>could we also suggest if users start typing a word from the middle of the suggested string?&lt;/code>. Of course, the deadline is yesterday, as always. On top he adds that he doesn&amp;rsquo;t care whether that makes sense from search engineers perspective, it must be done&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>. You try to argue that it will take forever to change upstream indexing pipeline because it is owned by another department of your company. PM doesn&amp;rsquo;t blink.&lt;/p>
+&lt;p>So, you are a &lt;a href="https://opensourceconnections.com/blog/2020/07/16/what-is-a-relevance-engineer/">search engineer&lt;/a> that happily uses &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-suggesters.html#completion-suggester">Elasticsearch Completion Suggester&lt;/a> feature: lightning speed prefix suggestions works just like a charm&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>.&lt;/p>
+&lt;p>But one day the product manager comes to you with a requirement: &lt;code>could we also suggest if users start typing a word from the middle of the suggested string?&lt;/code>. Of course, the deadline is yesterday, as always. On top he adds that he doesn&amp;rsquo;t care whether that makes sense from search engineers perspective, it must be done&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. You try to argue that it will take forever to change upstream indexing pipeline because it is owned by another department of your company. PM doesn&amp;rsquo;t blink.&lt;/p>
 &lt;h2 id="requirements">Requirements&lt;/h2>
 &lt;p>Your app suggests artist names. The problematic artist currently rocking in the charts and attracting a lot of attention is &lt;code>Britney Spears &amp;amp; Elton John&lt;/code>. The PM specifies that it is needed that artists name and surname should be the source of suggestions. This means and that all &lt;code>b&lt;/code>, &lt;code>s&lt;/code>, &lt;code>e&lt;/code>, &lt;code>j&lt;/code> should suggest that artist.&lt;/p>
 &lt;p>The actual song
@@ -20,7 +41,7 @@
 &lt;li>&lt;code>j&lt;/code> -&amp;gt; the last word.&lt;/li>
 &lt;/ul>
 &lt;p>Cool, it&amp;rsquo;s time to open the Kibana dev tools and hack. All examples are worked out and tested with version &lt;code>8.4.1&lt;/code>.&lt;/p>
-&lt;h3 id="initial-setup">Initial setup&lt;/h3>
+&lt;h3 id="baseline-suggestions-setup">Baseline suggestions setup&lt;/h3>
 &lt;p>Nothing fancy here, copy-paste from the documentation verbatim, for the sake of completeness.&lt;/p>
 &lt;pre>&lt;code class="language-text">DELETE music
 PUT music
@@ -77,7 +98,7 @@ POST music/_search?filter_path=suggest
 }
 }
 &lt;/code>&lt;/pre>
-&lt;h3 id="suggestions-from-the-second-word">Suggestions from the second word&lt;/h3>
+&lt;h3 id="suggest-from-the-second-word">Suggest from the second word&lt;/h3>
 &lt;p>The idea here is to have a subfield for suggestions that uses different analyzers for indexing and searching. For indexing we want an analyzer that drops the first token. For search time analyzer we want to use a standard analyzers because we should not drop first token from the search string. Do not forget to set &lt;code>preserve_position_increments&lt;/code> as &lt;code>false&lt;/code> for the new field.&lt;/p>
 &lt;pre>&lt;code class="language-text">DELETE music
 PUT music
@@ -331,8 +352,7 @@ POST music/_search?filter_path=suggest
 &lt;p>Note that the suggestion for &amp;ldquo;john e&amp;rdquo; also works. Which might be a bit unexpected.&lt;/p>
 &lt;h2 id="summary">Summary&lt;/h2>
 &lt;p>Every separate use case is covered with a dedicated field. To support all of them at once you just need to add all the subfields into index and query all of them with multiple &lt;code>suggest&lt;/code> clauses. How to combine those suggestions is out of scope for this post, but it should be implemented in your app.&lt;/p>
-&lt;h2 id="bonus-1">Bonus 1&lt;/h2>
-&lt;h3 id="synonyms-for-suggestions">Synonyms for suggestions&lt;/h3>
+&lt;h2 id="bonus-1-synonyms-for-suggestions">Bonus 1: Synonyms for suggestions&lt;/h2>
 &lt;p>After the &amp;ldquo;successful&amp;rdquo; release of the new functionality the very next day PM (under the usual influence of some exotic and probably illegal substances) once again came up with new idea: &amp;ldquo;in search suggestions we need to support variants of artist names&amp;rdquo;. His example was: &amp;ldquo;I&amp;rsquo;ve heard that most babies can&amp;rsquo;t pronounce &lt;code>britney&lt;/code> and she say something like &lt;a href="https://mom.com/baby-names/girl/19714/britney">&lt;code>ditney&lt;/code>&lt;/a>, so to make our product more successful among the baby searchers segment we must support this use case&amp;rdquo;.&lt;/p>
 &lt;p>Somewhat reasonable :)&lt;/p>
 &lt;p>The idea is to add synonym token filter for the artist names so that the synonym token would be on the 0 position in the token stream.&lt;/p>
@@ -414,7 +434,7 @@ POST music/_search?filter_path=suggest
 }
 &lt;/code>&lt;/pre>
 &lt;p>It works, amazing! Baby searchers are happy.&lt;/p>
-&lt;h2 id="bonus-2">Bonus 2&lt;/h2>
+&lt;h2 id="bonus-2-shingles-for-suggestions">Bonus 2: shingles for suggestions&lt;/h2>
 &lt;p>After some sleeping on the mind-bending development experience a colleague asked: &amp;ldquo;can&amp;rsquo;t we just use one field for all the requirements?&amp;rdquo;. His reasoning was that we index the same string multiple times and our clusters doesn&amp;rsquo;t have infinite capacity. Also, we&amp;rsquo;ve seen what and how PM is thinking, and it is only a matter of time when we will have to support suggestions from everywhere in the string&amp;quot;. We&amp;rsquo;ve already seen that using synonyms it is doable.&lt;/p>
 &lt;p>His idea was to analyze text in such a way that it would produce multiple tokens with the position=0 for all the potential suggestion &amp;ldquo;entry points&amp;rdquo;. To achieve it we could &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-shingle-tokenfilter.html">shingle&lt;/a> the string, take only shingles that has position=0 and take the last word from every shingle. Let&amp;rsquo;s try.&lt;/p>
 &lt;pre>&lt;code class="language-kibana">DELETE music
@@ -637,14 +657,17 @@ POST music/_search?filter_path=suggest
 }
 &lt;/code>&lt;/pre>
 &lt;p>Wow! Note, that a query (that spans several tokens) e.g. &lt;code>britney sp&lt;/code> doesn&amp;rsquo;t match anything. Fixable, but let&amp;rsquo;s leave the fix out of scope for now.&lt;/p>
-&lt;h3 id="fin">Fin&lt;/h3>
+&lt;h2 id="fin">Fin&lt;/h2>
 &lt;p>Thank you and congratulations: You got to the very end of the blog post. Tell me about your craziest adventures with the search suggestions in the comments below?&lt;/p>
 &lt;h2 id="footnotes">Footnotes&lt;/h2>
 &lt;section class="footnotes" role="doc-endnotes">
 &lt;hr>
 &lt;ol>
 &lt;li id="fn:1" role="doc-endnote">
-&lt;p>All the characters in this story are completely fictional. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;p>Have a look at the impressive engineering of &lt;a href="https://github.com/apache/lucene/blob/main/lucene/suggest/src/java/org/apache/lucene/search/suggest/analyzing/AnalyzingSuggester.java">Lucene&lt;/a>. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2" role="doc-endnote">
+&lt;p>All the characters in this story are completely fictional. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;/ol>
 &lt;/section></description></item><item><title>Entity Resolution with Opensearch/Elasticsearch</title><link>https://www.jocas.lt/blog/post/entity-resolution/</link><pubDate>Wed, 12 Jan 2022 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/entity-resolution/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>

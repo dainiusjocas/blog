@@ -1,7 +1,7 @@
 ---
 aliases: [elasticsearch-full-phrase-with-slop]
 projects: [elasticsearch]
-title: Match an Entire Phrase with a Slop in Elasticsearch
+title: Match an Entire Text with a Slop in Elasticsearch
 authors: [Dainius Jocas]
 date: '2023-01-29'
 tags: [elasticsearch]

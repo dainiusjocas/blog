@@ -1,4 +1,216 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link><atom:link href="https://www.jocas.lt/blog/index.xml" rel="self" type="application/rss+xml"/><description>Dainius Jocas</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2022 Dainius Jocas</copyright><lastBuildDate>Tue, 13 Sep 2022 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link></image><item><title>Tricks with Elasticsearch Completions Suggesters</title><link>https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/</link><pubDate>Tue, 13 Sep 2022 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link><atom:link href="https://www.jocas.lt/blog/index.xml" rel="self" type="application/rss+xml"/><description>Dainius Jocas</description><generator>Source Themes Academic (https://sourcethemes.com/academic/)</generator><language>en-us</language><copyright>© 2023 Dainius Jocas</copyright><lastBuildDate>Sun, 29 Jan 2023 00:00:00 +0000</lastBuildDate><image><url>img/map[gravatar:%!s(bool=false) shape:circle]</url><title>Dainius Jocas</title><link>https://www.jocas.lt/blog/</link></image><item><title>Match the Entire Text with a Slop in Elasticsearch</title><link>https://www.jocas.lt/blog/post/elasticsearch-full-phrase-with-slop/</link><pubDate>Sun, 29 Jan 2023 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/elasticsearch-full-phrase-with-slop/</guid><description>&lt;h2 id="intro">Intro&lt;/h2>
+&lt;p>Recently I&amp;rsquo;ve done a little Elasticsearch-based demo where there was one requirement I believe is worth sharing: the entire text should match even if two words are swapped.
+This post is divided into two parts: requirements for a demo, and several implementation options.&lt;/p>
+&lt;h2 id="requirements">Requirements&lt;/h2>
+&lt;p>A simplified version of relevant requirements goes something like this:&lt;/p>
+&lt;ol>
+&lt;li>Documents are chat app message bodies,&lt;/li>
+&lt;li>Match a message body with other messages even if any two words were swapped.&lt;/li>
+&lt;/ol>
+&lt;p>E.g. a message &lt;code>this is my message&lt;/code> should match &lt;code>is this my message&lt;/code> and vice versa.&lt;/p>
+&lt;p>At first, this looks like nothing fancy, just set up an &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-analyzers.html">analyzer&lt;/a> with the required &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-tokenfilters.html%60">token filters&lt;/a> and do a &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query-phrase.html">phrase_match query&lt;/a> with a &lt;code>slop=2&lt;/code>.&lt;/p>
+&lt;p>But then comes the tricky bit: we also need to take into account the &lt;strong>length of the message&lt;/strong>.
+This is because a &lt;code>phrase_match&lt;/code> with a short message will match longer messages.
+E.g. We don&amp;rsquo;t want that the query &lt;code>is this my message&lt;/code> would match &lt;code>this is my message which is longer&lt;/code>.&lt;/p>
+&lt;h2 id="implementation-strategies">Implementation strategies&lt;/h2>
+&lt;p>We&amp;rsquo;ll discuss two implementation strategies: fingerprinting based on the token count and a clever trick leveraging the text analysis pipeline.&lt;/p>
+&lt;h3 id="fingerprint">Fingerprint&lt;/h3>
+&lt;p>An instinctive approach is to &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/master/fingerprint-processor.html">fingerprint&lt;/a> the message text.
+The simplest fingerprint could just be the count of tokens.
+Elasticsearch conveniently offers a &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/token-count.html">token count field type&lt;/a>.&lt;/p>
+&lt;p>One serious downside of this approach is that at the query time we&amp;rsquo;d have to get the count of tokens of the query.
+This means either one additional round-trip to Elasticsearch to get the token count, e.g. using the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-analyze.html">&lt;code>_analyze&lt;/code> API&lt;/a> or use of a &lt;code>script&lt;/code> in the query.
+Let&amp;rsquo;s rule out the round trip to the &lt;code>_analyze&lt;/code> API approach for the demo.
+Then how to implement the &lt;code>script&lt;/code> to get query token count?
+The &lt;a href="https://chat.openai.com/chat#">Chat GPT&lt;/a> gave me a hint at a possible &lt;code>script&lt;/code> based solution :)&lt;/p>
+&lt;p>&lt;img src="query-token-count.png" alt="Script">&lt;/p>
+&lt;p>A significant problem with the above approach is that the text is split by a whitespace character (or something that &lt;a href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html#split%2Djava.lang.CharSequence%2D">&lt;code>split&lt;/code>&lt;/a> accepts).
+Any seasoned search engineer immediately notices that the text is not tokenized by the same analyzer that was used to tokenize the text during the index-time for the token counting.
+Of, course we could set up both &lt;code>tokenizers&lt;/code> to work the same way, but that approach seems somewhat fragile because part of the logic is in the index mapping and the other part is in the script that lives in the query constructor which is probably inside your application.&lt;/p>
+&lt;h3 id="clever-text-analysis">Clever Text Analysis&lt;/h3>
+&lt;p>We could also be more clever about how to ensure that the length of the matched texts is equal.
+My strategy is to require both conditions to be true:&lt;/p>
+&lt;ol>
+&lt;li>Match the text &lt;strong>from the beginning of the string&lt;/strong> with a &lt;code>phrase_match&lt;/code> query with a slop=2.&lt;/li>
+&lt;li>Match the &lt;strong>reversed&lt;/strong> text from the beginning of the string with a &lt;code>phrase_match&lt;/code> query with a slop=2.&lt;/li>
+&lt;/ol>
+&lt;p>The strategy requires us to solve 2 puzzles:&lt;/p>
+&lt;ol>
+&lt;li>How to match exactly from the beginning of the text?&lt;/li>
+&lt;li>How to reverse the text?&lt;/li>
+&lt;/ol>
+&lt;p>To ensure the matching from the beginning we could insert a synthetic &lt;code>PREFIX&lt;/code> token at the position 0.&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>&lt;/p>
+&lt;p>For the text reversal the idea is to:&lt;/p>
+&lt;ol>
+&lt;li>Use the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-keyword-tokenizer.html">keyword tokenizer&lt;/a>&lt;/li>
+&lt;li>Use the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-reverse-tokenfilter.html">reverse&lt;/a> token filter on the entire text,&lt;/li>
+&lt;li>Split the text into tokens using the &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-word-delimiter-graph-tokenfilter.html#analysis-word-delimiter-graph-tokenfilter">word delimiter graph token filter&lt;/a>.&lt;/li>
+&lt;li>Add a synthetic token at the position 0.&lt;/li>
+&lt;/ol>
+&lt;p>Let&amp;rsquo;s work out an example from requirements: &lt;code>this is my message&lt;/code> should match &lt;code>is this my message&lt;/code> but should not match &lt;code>this is my message which is longer&lt;/code>.&lt;/p>
+&lt;p>The &lt;code>messages&lt;/code> index config&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;settings&amp;quot;: {
+&amp;quot;number_of_replicas&amp;quot;: 0,
+&amp;quot;number_of_shards&amp;quot;: 1,
+&amp;quot;analysis&amp;quot;: {
+&amp;quot;analyzer&amp;quot;: {
+&amp;quot;normal_direction_analyzer&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;custom&amp;quot;,
+&amp;quot;tokenizer&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;token_splitter&amp;quot;,
+&amp;quot;prefixer&amp;quot;
+]
+},
+&amp;quot;backwards_direction_analyzer&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;custom&amp;quot;,
+&amp;quot;tokenizer&amp;quot;: &amp;quot;keyword&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;reverse&amp;quot;,
+&amp;quot;token_splitter&amp;quot;,
+&amp;quot;prefixer&amp;quot;
+]
+}
+},
+&amp;quot;filter&amp;quot;: {
+&amp;quot;token_splitter&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;word_delimiter_graph&amp;quot;,
+&amp;quot;split_on_case_change&amp;quot;: false,
+&amp;quot;split_on_numerics&amp;quot;: false
+},
+&amp;quot;inject_prefix&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;pattern_replace&amp;quot;,
+&amp;quot;pattern&amp;quot;: &amp;quot;^(.*)$&amp;quot;,
+&amp;quot;replacement&amp;quot;: &amp;quot;PREFIX $1&amp;quot;
+},
+&amp;quot;prefixer&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;condition&amp;quot;,
+&amp;quot;filter&amp;quot;: [
+&amp;quot;inject_prefix&amp;quot;,
+&amp;quot;token_splitter&amp;quot;
+],
+&amp;quot;script&amp;quot;: {
+&amp;quot;source&amp;quot;: &amp;quot;token.getPosition() == 0&amp;quot;
+}
+}
+}
+}
+},
+&amp;quot;mappings&amp;quot;: {
+&amp;quot;properties&amp;quot;: {
+&amp;quot;body&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;fields&amp;quot;: {
+&amp;quot;normal_direction&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;normal_direction_analyzer&amp;quot;
+},
+&amp;quot;backwards_direction&amp;quot;: {
+&amp;quot;type&amp;quot;: &amp;quot;text&amp;quot;,
+&amp;quot;analyzer&amp;quot;: &amp;quot;backwards_direction_analyzer&amp;quot;
+}
+}
+}
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>Let&amp;rsquo;s index 2 documents:&lt;/p>
+&lt;pre>&lt;code class="language-text">POST _bulk?refresh=true
+{ &amp;quot;index&amp;quot; : { &amp;quot;_index&amp;quot; : &amp;quot;messages&amp;quot;, &amp;quot;_id&amp;quot; : &amp;quot;1&amp;quot; } }
+{ &amp;quot;body&amp;quot;: &amp;quot;this is my message&amp;quot; }
+{ &amp;quot;index&amp;quot; : { &amp;quot;_index&amp;quot; : &amp;quot;messages&amp;quot;, &amp;quot;_id&amp;quot; : &amp;quot;2&amp;quot; } }
+{ &amp;quot;body&amp;quot;: &amp;quot;this is my message which is longer&amp;quot; }
+&lt;/code>&lt;/pre>
+&lt;p>Let&amp;rsquo;s query the &lt;code>messages&lt;/code> index:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;query&amp;quot;: {
+&amp;quot;bool&amp;quot;: {
+&amp;quot;must&amp;quot;: [
+{
+&amp;quot;match_phrase&amp;quot;: {
+&amp;quot;body.normal_direction&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;is this my message&amp;quot;,
+&amp;quot;slop&amp;quot;: 2
+}
+}
+},
+{
+&amp;quot;match_phrase&amp;quot;: {
+&amp;quot;body.backwards_direction&amp;quot;: {
+&amp;quot;query&amp;quot;: &amp;quot;is this my message&amp;quot;,
+&amp;quot;slop&amp;quot;: 2
+}
+}
+}
+],
+&amp;quot;_name&amp;quot;: &amp;quot;full phrase with accounted length&amp;quot;
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>The response:&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;took&amp;quot;: 2,
+&amp;quot;timed_out&amp;quot;: false,
+&amp;quot;_shards&amp;quot;: {
+&amp;quot;total&amp;quot;: 1,
+&amp;quot;successful&amp;quot;: 1,
+&amp;quot;skipped&amp;quot;: 0,
+&amp;quot;failed&amp;quot;: 0
+},
+&amp;quot;hits&amp;quot;: {
+&amp;quot;total&amp;quot;: {
+&amp;quot;value&amp;quot;: 1,
+&amp;quot;relation&amp;quot;: &amp;quot;eq&amp;quot;
+},
+&amp;quot;max_score&amp;quot;: 0.46947598,
+&amp;quot;hits&amp;quot;: [
+{
+&amp;quot;_index&amp;quot;: &amp;quot;messages&amp;quot;,
+&amp;quot;_id&amp;quot;: &amp;quot;1&amp;quot;,
+&amp;quot;_score&amp;quot;: 0.46947598,
+&amp;quot;_source&amp;quot;: {
+&amp;quot;body&amp;quot;: &amp;quot;this is my message&amp;quot;
+},
+&amp;quot;matched_queries&amp;quot;: [
+&amp;quot;full phrase with accounted length&amp;quot;
+]
+}
+]
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>The response is exactly as expected: it does match the shorter but not the longer message body.&lt;/p>
+&lt;p>Downsides of the approach:&lt;/p>
+&lt;ul>
+&lt;li>The text is indexed 2 times. But it is acceptable to index and analyze the text in multiple ways, e.g. stemming.&lt;/li>
+&lt;li>Analyzers got somewhat complicated. But the complicated bit is isolated only for dealing with the first token. Also, a couple of examples with the &lt;code>_analyze&lt;/code> API should make the analysis pipeline understandable.&lt;/li>
+&lt;li>The total text length is limited to the &lt;code>Integer.MAX_VALUE&lt;/code> which is 2147483647 characters. But ~2 GB per message should be enough.&lt;/li>
+&lt;li>&amp;ldquo;Tokenization&amp;rdquo; is done with the &lt;code>word_delimiter_graph&lt;/code>. But it is a standard &lt;a href="https://lucene.apache.org">Lucene&lt;/a> feature that you should learn anyway.&lt;/li>
+&lt;li>Also, all the gotchas of the &lt;code>slop&lt;/code> are relevant, e.g. if one token was dropped/added from/to the query, then there still would be a match.&lt;/li>
+&lt;/ul>
+&lt;p>A nice thing is that this solution is contained within the text analysis pipeline: no ingest pipelines, no scripting in queries, etc.&lt;/p>
+&lt;h2 id="summary">Summary&lt;/h2>
+&lt;p>In this post we&amp;rsquo;ve defined a problem of matching entire text with some flexibility in terms of token position changes.
+We&amp;rsquo;ve discussed 2 approaches: fingerprinting and leveraging text analysis pipeline to account for the text length.
+IMO, both approaches are somewhat hacky and have their downsides.
+I&amp;rsquo;ve picked to work out the text analysis approach, and I&amp;rsquo;ve got my demo done.&lt;/p>
+&lt;p>Let me know how you would approach this problem in the comments below.&lt;/p>
+&lt;h2 id="footnotes">Footnotes&lt;/h2>
+&lt;section class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1" role="doc-endnote">
+&lt;p>Of course, I&amp;rsquo;ve been thinking about leveraging &lt;a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-span-first-query.html">&lt;code>span_first&lt;/code>&lt;/a> query, but it requires another inner term level span query.
+Which would make the query construction complicated because tokenization should be done inside your application. &lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2" role="doc-endnote">
+&lt;p>lowercasing and ascii-folding are omitted for brevity. &lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/section></description></item><item><title>Tricks with Elasticsearch Completions Suggesters</title><link>https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/</link><pubDate>Tue, 13 Sep 2022 00:00:00 +0000</pubDate><guid>https://www.jocas.lt/blog/post/tricks-with-elasticsearch-completion-suggesters/</guid><description>&lt;h2 id="tldr">TL;DR&lt;/h2>
 &lt;p>Elasticsearch text analyzers can supercharge search suggesters.&lt;/p>
 &lt;h2>Table of Contents&lt;/h2>
 &lt;nav id="TableOfContents">

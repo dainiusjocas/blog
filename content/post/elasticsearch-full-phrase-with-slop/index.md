@@ -233,6 +233,8 @@ Downsides of the approach:
 - The total text length is limited to the `Integer.MAX_VALUE` which is 2147483647 characters. But ~2 GB per message should be enough.
 - "Tokenization" is done with the `word_delimiter_graph`. But it is a standard [Lucene](https://lucene.apache.org) feature that you should learn anyway.
 - Also, all the gotchas of the `slop` are relevant, e.g. if one token was dropped/added from/to the query, then there still would be a match.
+- I'd suggest you also should take extra care in handling the non-alphanumeric symbols.
+- Also, the setup might produce surprising results for shorter (e.g. 1-5 words) strings.
 
 A nice thing is that this solution is contained within the text analysis pipeline: no ingest pipelines, no scripting in queries, etc.
 

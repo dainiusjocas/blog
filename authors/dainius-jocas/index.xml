@@ -190,6 +190,8 @@ My strategy is to require both conditions to be true:&lt;/p>
 &lt;li>The total text length is limited to the &lt;code>Integer.MAX_VALUE&lt;/code> which is 2147483647 characters. But ~2 GB per message should be enough.&lt;/li>
 &lt;li>&amp;ldquo;Tokenization&amp;rdquo; is done with the &lt;code>word_delimiter_graph&lt;/code>. But it is a standard &lt;a href="https://lucene.apache.org">Lucene&lt;/a> feature that you should learn anyway.&lt;/li>
 &lt;li>Also, all the gotchas of the &lt;code>slop&lt;/code> are relevant, e.g. if one token was dropped/added from/to the query, then there still would be a match.&lt;/li>
+&lt;li>I&amp;rsquo;d suggest you also should take extra care in handling the non-alphanumeric symbols.&lt;/li>
+&lt;li>Also, the setup might produce surprising results for shorter (e.g. 1-5 words) strings.&lt;/li>
 &lt;/ul>
 &lt;p>A nice thing is that this solution is contained within the text analysis pipeline: no ingest pipelines, no scripting in queries, etc.&lt;/p>
 &lt;h2 id="summary">Summary&lt;/h2>
